@@ -1,11 +1,24 @@
 import { relations } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  date,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
+
+export const genderEnum = pgEnum("gender", ["male", "female", "other"]);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
+  phone: text("phone").notNull().unique(),
+  birthDate: date("birth_date").notNull(),
+  gender: genderEnum("gender"),
   image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()

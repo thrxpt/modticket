@@ -36,6 +36,7 @@
     "db:watch": "turbo -F @modticket/db db:watch",
     "db:stop": "turbo -F @modticket/db db:stop",
     "db:down": "turbo -F @modticket/db db:down",
+    "db:seed": "turbo -F @modticket/db db:seed",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install"

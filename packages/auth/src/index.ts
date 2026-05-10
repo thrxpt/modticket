@@ -27,6 +27,19 @@ export function createAuth() {
       },
     },
     plugins: [admin()],
+    user: {
+      additionalFields: {
+        phone: {
+          type: "string",
+        },
+        birthDate: {
+          type: "date",
+        },
+        gender: {
+          type: schema.genderEnum.enumValues,
+        },
+      },
+    },
   });
 }
 
