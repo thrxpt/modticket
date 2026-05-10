@@ -37,7 +37,8 @@
     "db:stop": "turbo -F @modticket/db db:stop",
     "db:down": "turbo -F @modticket/db db:down",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@modticket/env": "workspace:*",
