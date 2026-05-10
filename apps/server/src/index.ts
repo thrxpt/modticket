@@ -10,7 +10,10 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Elysia } from "elysia";
 import { initLogger } from "evlog";
-import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
+import {
+  type BetterAuthInstance,
+  createAuthMiddleware,
+} from "evlog/better-auth";
 import { evlog } from "evlog/elysia";
 
 const rpcHandler = new RPCHandler(appRouter, {
@@ -54,9 +57,9 @@ new Elysia()
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
-    }),
+    })
   )
-  .all("/api/auth/*", async (context) => {
+  .all("/api/auth/*", (context) => {
     const { request, status } = context;
     if (["POST", "GET"].includes(request.method)) {
       return auth.handler(request);
@@ -74,7 +77,7 @@ new Elysia()
     },
     {
       parse: "none",
-    },
+    }
   )
   .all(
     "/api-reference*",
@@ -87,7 +90,7 @@ new Elysia()
     },
     {
       parse: "none",
-    },
+    }
   )
   .get("/", () => "OK")
   .listen(3000, () => {
