@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/_admin/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
+import { Route as AdminConcertsRouteImport } from './routes/_admin/concerts'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -33,15 +34,22 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminConcertsRoute = AdminConcertsRouteImport.update({
+  id: '/concerts',
+  path: '/concerts',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
 }
 export interface FileRoutesById {
@@ -49,14 +57,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteRouteWithChildren
   '/login': typeof LoginRoute
+  '/_admin/concerts': typeof AdminConcertsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard'
+  fullPaths: '/' | '/login' | '/concerts' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard'
-  id: '__root__' | '/' | '/_admin' | '/login' | '/_admin/dashboard'
+  to: '/' | '/login' | '/concerts' | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/_admin'
+    | '/login'
+    | '/_admin/concerts'
+    | '/_admin/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,14 +110,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_admin/concerts': {
+      id: '/_admin/concerts'
+      path: '/concerts'
+      fullPath: '/concerts'
+      preLoaderRoute: typeof AdminConcertsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
 interface AdminRouteRouteChildren {
+  AdminConcertsRoute: typeof AdminConcertsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminConcertsRoute: AdminConcertsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
 }
 

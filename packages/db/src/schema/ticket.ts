@@ -124,7 +124,7 @@ export const showtime = pgTable("showtime", {
   status: showtimeStatusEnum("status").notNull(),
   concertId: text("concert_id")
     .notNull()
-    .references(() => concert.id, { onDelete: "restrict" }),
+    .references(() => concert.id, { onDelete: "cascade" }),
   venueId: text("venue_id")
     .notNull()
     .references(() => venue.id, { onDelete: "restrict" }),
@@ -146,7 +146,7 @@ export const showtimeSeat = pgTable(
       .references(() => seat.id),
     showtimeId: text("showtime_id")
       .notNull()
-      .references(() => showtime.id),
+      .references(() => showtime.id, { onDelete: "cascade" }),
   },
   (table) => [
     primaryKey({ columns: [table.showtimeId, table.seatId] }),

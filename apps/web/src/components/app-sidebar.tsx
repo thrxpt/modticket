@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@modticket/ui/components/sidebar";
-import { CircleGauge, Ticket } from "lucide-react";
+import { CircleGauge, Music, Ticket } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -17,6 +17,11 @@ const data = {
       icon: CircleGauge,
       title: "Dashboard",
       url: "/dashboard",
+    },
+    {
+      icon: Music,
+      title: "Concerts",
+      url: "/concerts",
     },
   ],
 };
