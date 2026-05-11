@@ -9,7 +9,13 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@modticket/ui/components/dropdown-menu";
 import {
@@ -19,7 +25,15 @@ import {
   useSidebar,
 } from "@modticket/ui/components/sidebar";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import {
+  ChevronsUpDown,
+  Laptop,
+  LogOut,
+  Moon,
+  Sun,
+  SunMoon,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 import { authClient } from "@/lib/auth-client";
 
 export function NavUser({
@@ -29,6 +43,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   return (
     <SidebarMenu>
@@ -73,6 +88,30 @@ export function NavUser({
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <SunMoon />
+                Theme
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="min-w-32">
+                  <DropdownMenuRadioGroup
+                    onValueChange={setTheme}
+                    value={theme}
+                  >
+                    <DropdownMenuRadioItem value="system">
+                      <Laptop /> System
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="light">
+                      <Sun /> Light
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark">
+                      <Moon /> Dark
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
             <DropdownMenuItem
               onClick={async () => {
                 await authClient.signOut({

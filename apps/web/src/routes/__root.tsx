@@ -46,8 +46,9 @@ function RootComponent() {
       <HeadContent />
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="system"
         disableTransitionOnChange
+        enableSystem
         storageKey="vite-ui-theme"
       >
         <TooltipProvider>
