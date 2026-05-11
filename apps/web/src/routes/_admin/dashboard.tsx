@@ -13,10 +13,9 @@ import {
   TableRow,
 } from "@modticket/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Banknote, Crown, Music, Ticket, Users } from "lucide-react";
 import type { ReactNode } from "react";
-import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
@@ -32,16 +31,6 @@ const percentageFormatter = new Intl.NumberFormat("en-US", {
 
 export const Route = createFileRoute("/_admin/dashboard")({
   component: RouteComponent,
-  beforeLoad: async () => {
-    const session = await authClient.getSession();
-    if (!session.data || session.data.user.role !== "admin") {
-      redirect({
-        to: "/login",
-        throw: true,
-      });
-    }
-    return { session: session.data };
-  },
 });
 
 function formatCurrency(value: number): string {

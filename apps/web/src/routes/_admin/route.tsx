@@ -2,12 +2,23 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@modticket/ui/components/sidebar";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_admin")({
   component: AdminLayoutComponent,
+  beforeLoad: async () => {
+    const session = await authClient.getSession();
+    if (!session.data || session.data.user.role !== "admin") {
+      redirect({
+        to: "/login",
+        throw: true,
+      });
+    }
+    return { session: session.data };
+  },
 });
 
 function AdminLayoutComponent() {
