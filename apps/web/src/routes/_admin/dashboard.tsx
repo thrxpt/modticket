@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_admin/dashboard")({
   component: RouteComponent,
   beforeLoad: async () => {
     const session = await authClient.getSession();
@@ -16,5 +16,5 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function RouteComponent() {
-  return <div>Hello "/dashboard"!</div>;
+  return <div>Hello /dashboard</div>;
 }
