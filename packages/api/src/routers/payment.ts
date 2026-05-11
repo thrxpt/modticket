@@ -1,8 +1,8 @@
+import { db } from "@modticket/db";
 import { booking, payment } from "@modticket/db/schema/ticket";
 import { ORPCError } from "@orpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, protectedProcedure } from "../index";
 
 export const paymentRouter = {
@@ -22,7 +22,7 @@ export const paymentRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      const { db, session } = context;
+      const { session } = context;
 
       // Verify booking exists and belongs to the user
       const [b] = await db
@@ -79,7 +79,7 @@ export const paymentRouter = {
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .handler(async ({ context, input }) => {
-      const { db, session } = context;
+      const { session } = context;
 
       const [p] = await db
         .select()
@@ -106,7 +106,7 @@ export const paymentRouter = {
 
   /** List payments for the current user's bookings. */
   listMine: protectedProcedure.handler(async ({ context }) => {
-    const { db, session } = context;
+    const { session } = context;
 
     const myBookings = await db
       .select({ id: booking.id })
@@ -126,9 +126,7 @@ export const paymentRouter = {
   }),
 
   /** Admin: list all payments. */
-  listAll: adminProcedure.handler(
-    async ({ context }) => await context.db.select().from(payment)
-  ),
+  listAll: adminProcedure.handler(async () => await db.select().from(payment)),
 
   /** Admin: update payment status (e.g. mark as refunded). */
   updateStatus: adminProcedure
@@ -138,8 +136,8 @@ export const paymentRouter = {
         paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]),
       })
     )
-    .handler(async ({ context, input }) => {
-      const [updated] = await context.db
+    .handler(async ({ input }) => {
+      const [updated] = await db
         .update(payment)
         .set({ paymentStatus: input.paymentStatus })
         .where(eq(payment.id, input.id))

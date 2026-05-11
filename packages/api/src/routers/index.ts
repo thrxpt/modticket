@@ -6,6 +6,7 @@ import { concertRouter } from "./concert";
 import { organizerRouter } from "./organizer";
 import { paymentRouter } from "./payment";
 import { showtimeRouter } from "./showtime";
+import { ticketRouter } from "./ticket";
 import { venueRouter } from "./venue";
 
 export const appRouter = {
@@ -16,6 +17,7 @@ export const appRouter = {
   payment: paymentRouter,
   showtime: showtimeRouter,
   venue: venueRouter,
+  ticket: ticketRouter,
 };
 
 export type AppRouter = typeof appRouter;

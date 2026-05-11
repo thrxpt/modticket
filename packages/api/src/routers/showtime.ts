@@ -1,3 +1,4 @@
+import { db } from "@modticket/db";
 import {
   booking,
   seat,
@@ -8,28 +9,27 @@ import {
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, publicProcedure } from "../index";
 
 export const showtimeRouter = {
   /** List all showtimes, optionally filtered by concert. */
   list: publicProcedure
     .input(z.object({ concertId: z.string().optional() }))
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       if (input.concertId) {
-        return await context.db
+        return await db
           .select()
           .from(showtime)
           .where(eq(showtime.concertId, input.concertId));
       }
-      return await context.db.select().from(showtime);
+      return await db.select().from(showtime);
     }),
 
   /** Get a single showtime by ID. */
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .select()
         .from(showtime)
         .where(eq(showtime.id, input.id));
@@ -55,9 +55,9 @@ export const showtimeRouter = {
         status: z.enum(["upcoming", "ongoing", "ended", "cancelled"]),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const id = crypto.randomUUID();
-      const [item] = await context.db
+      const [item] = await db
         .insert(showtime)
         .values({
           id,
@@ -66,19 +66,19 @@ export const showtimeRouter = {
         .returning();
 
       // Initialise seat availability for this showtime
-      const zones = await context.db
+      const zones = await db
         .select()
         .from(zone)
         .where(eq(zone.venueId, input.venueId));
 
       for (const venueZone of zones) {
-        const seats = await context.db
+        const seats = await db
           .select()
           .from(seat)
           .where(eq(seat.zoneId, venueZone.id));
 
         if (seats.length > 0) {
-          await context.db.insert(showtimeSeat).values(
+          await db.insert(showtimeSeat).values(
             seats.map((s) => ({
               showtimeId: id,
               seatId: s.id,
@@ -102,9 +102,9 @@ export const showtimeRouter = {
           .optional(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const { id, ...data } = input;
-      const [item] = await context.db
+      const [item] = await db
         .update(showtime)
         .set(data)
         .where(eq(showtime.id, id))
@@ -123,9 +123,9 @@ export const showtimeRouter = {
    */
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       // Business rule: cannot delete showtime with existing bookings
-      const [existingBooking] = await context.db
+      const [existingBooking] = await db
         .select({ id: booking.id })
         .from(booking)
         .where(eq(booking.showtimeId, input.id));
@@ -136,7 +136,7 @@ export const showtimeRouter = {
         });
       }
 
-      const [item] = await context.db
+      const [item] = await db
         .delete(showtime)
         .where(eq(showtime.id, input.id))
         .returning();
@@ -155,8 +155,8 @@ export const showtimeRouter = {
   getSeatStatus: publicProcedure
     .input(z.object({ showtimeId: z.string() }))
     .handler(
-      async ({ context, input }) =>
-        await context.db
+      async ({ input }) =>
+        await db
           .select({
             seatId: showtimeSeat.seatId,
             isAvailable: showtimeSeat.isAvailable,

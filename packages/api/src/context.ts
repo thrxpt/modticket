@@ -1,5 +1,4 @@
 import { auth } from "@modticket/auth";
-import { db } from "@modticket/db";
 import type { Context as ElysiaContext } from "elysia";
 
 export interface CreateContextOptions {
@@ -11,7 +10,6 @@ export async function createContext({ context }: CreateContextOptions) {
     headers: context.request.headers,
   });
   return {
-    db,
     auth: null,
     session,
   };

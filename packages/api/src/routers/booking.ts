@@ -1,3 +1,4 @@
+import { db } from "@modticket/db";
 import {
   booking,
   seat,
@@ -9,7 +10,6 @@ import {
 import { ORPCError } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, protectedProcedure } from "../index";
 
 export const bookingRouter = {
@@ -25,7 +25,7 @@ export const bookingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      const { db, session } = context;
+      const { session } = context;
       const userId = session.user.id;
 
       return await db.transaction(async (tx) => {
@@ -112,7 +112,7 @@ export const bookingRouter = {
   /** Get the current user's booking history. */
   listMine: protectedProcedure.handler(
     async ({ context }) =>
-      await context.db
+      await db
         .select()
         .from(booking)
         .where(eq(booking.userId, context.session.user.id))
@@ -125,7 +125,7 @@ export const bookingRouter = {
   getDetails: protectedProcedure
     .input(z.object({ id: z.string() }))
     .handler(async ({ context, input }) => {
-      const [b] = await context.db
+      const [b] = await db
         .select()
         .from(booking)
         .where(eq(booking.id, input.id));
@@ -139,7 +139,7 @@ export const bookingRouter = {
         throw new ORPCError("FORBIDDEN");
       }
 
-      const tickets = await context.db
+      const tickets = await db
         .select({
           ticketId: ticket.id,
           seatNumber: seat.seatNumber,
@@ -166,7 +166,7 @@ export const bookingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      const { db, session } = context;
+      const { session } = context;
 
       const [b] = await db
         .select()
@@ -221,7 +221,5 @@ export const bookingRouter = {
     }),
 
   /** Admin: list all bookings in the system. */
-  listAll: adminProcedure.handler(
-    async ({ context }) => await context.db.select().from(booking)
-  ),
+  listAll: adminProcedure.handler(async () => await db.select().from(booking)),
 };

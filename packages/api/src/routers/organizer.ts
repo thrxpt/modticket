@@ -1,19 +1,17 @@
+import { db } from "@modticket/db";
 import { organizer } from "@modticket/db/schema/ticket";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, publicProcedure } from "../index";
 
 export const organizerRouter = {
-  list: publicProcedure.handler(
-    async ({ context }) => await context.db.select().from(organizer)
-  ),
+  list: publicProcedure.handler(async () => await db.select().from(organizer)),
 
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .select()
         .from(organizer)
         .where(eq(organizer.id, input.id));
@@ -33,9 +31,9 @@ export const organizerRouter = {
         phone: z.string().min(1),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const id = crypto.randomUUID();
-      const [item] = await context.db
+      const [item] = await db
         .insert(organizer)
         .values({
           id,
@@ -54,9 +52,9 @@ export const organizerRouter = {
         phone: z.string().min(1).optional(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const { id, ...data } = input;
-      const [item] = await context.db
+      const [item] = await db
         .update(organizer)
         .set(data)
         .where(eq(organizer.id, id))
@@ -71,8 +69,8 @@ export const organizerRouter = {
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .delete(organizer)
         .where(eq(organizer.id, input.id))
         .returning();

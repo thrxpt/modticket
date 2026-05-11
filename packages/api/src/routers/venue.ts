@@ -1,19 +1,17 @@
+import { db } from "@modticket/db";
 import { seat, venue, zone } from "@modticket/db/schema/ticket";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, publicProcedure } from "../index";
 
 export const venueRouter = {
-  list: publicProcedure.handler(
-    async ({ context }) => await context.db.select().from(venue)
-  ),
+  list: publicProcedure.handler(async () => await db.select().from(venue)),
 
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .select()
         .from(venue)
         .where(eq(venue.id, input.id));
@@ -33,9 +31,9 @@ export const venueRouter = {
         capacity: z.number().int().positive(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const id = crypto.randomUUID();
-      const [item] = await context.db
+      const [item] = await db
         .insert(venue)
         .values({
           id,
@@ -54,9 +52,9 @@ export const venueRouter = {
         capacity: z.number().int().positive().optional(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const { id, ...data } = input;
-      const [item] = await context.db
+      const [item] = await db
         .update(venue)
         .set(data)
         .where(eq(venue.id, id))
@@ -71,8 +69,8 @@ export const venueRouter = {
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .delete(venue)
         .where(eq(venue.id, input.id))
         .returning();
@@ -87,11 +85,8 @@ export const venueRouter = {
   listZones: publicProcedure
     .input(z.object({ venueId: z.string() }))
     .handler(
-      async ({ context, input }) =>
-        await context.db
-          .select()
-          .from(zone)
-          .where(eq(zone.venueId, input.venueId))
+      async ({ input }) =>
+        await db.select().from(zone).where(eq(zone.venueId, input.venueId))
     ),
 
   createZone: adminProcedure
@@ -103,9 +98,9 @@ export const venueRouter = {
         price: z.string(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const id = crypto.randomUUID();
-      const [item] = await context.db
+      const [item] = await db
         .insert(zone)
         .values({
           id,
@@ -124,9 +119,9 @@ export const venueRouter = {
         price: z.string().optional(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const { id, ...data } = input;
-      const [item] = await context.db
+      const [item] = await db
         .update(zone)
         .set(data)
         .where(eq(zone.id, id))
@@ -141,8 +136,8 @@ export const venueRouter = {
 
   deleteZone: adminProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .delete(zone)
         .where(eq(zone.id, input.id))
         .returning();
@@ -157,11 +152,8 @@ export const venueRouter = {
   listSeats: publicProcedure
     .input(z.object({ zoneId: z.string() }))
     .handler(
-      async ({ context, input }) =>
-        await context.db
-          .select()
-          .from(seat)
-          .where(eq(seat.zoneId, input.zoneId))
+      async ({ input }) =>
+        await db.select().from(seat).where(eq(seat.zoneId, input.zoneId))
     ),
 
   createSeats: adminProcedure
@@ -171,13 +163,13 @@ export const venueRouter = {
         seatNumbers: z.array(z.string().min(1)),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const values = input.seatNumbers.map((seatNumber) => ({
         id: crypto.randomUUID(),
         zoneId: input.zoneId,
         seatNumber,
       }));
 
-      return await context.db.insert(seat).values(values).returning();
+      return await db.insert(seat).values(values).returning();
     }),
 };

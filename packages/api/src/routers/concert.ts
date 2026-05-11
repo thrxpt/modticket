@@ -1,21 +1,19 @@
+import { db } from "@modticket/db";
 import { booking, concert, showtime } from "@modticket/db/schema/ticket";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-
 import { adminProcedure, publicProcedure } from "../index";
 
 export const concertRouter = {
   /** Public: list all concerts. */
-  list: publicProcedure.handler(
-    async ({ context }) => await context.db.select().from(concert)
-  ),
+  list: publicProcedure.handler(async () => await db.select().from(concert)),
 
   /** Public: get a single concert by ID. */
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
-      const [item] = await context.db
+    .handler(async ({ input }) => {
+      const [item] = await db
         .select()
         .from(concert)
         .where(eq(concert.id, input.id));
@@ -41,9 +39,9 @@ export const concertRouter = {
         venueId: z.string(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const id = crypto.randomUUID();
-      const [item] = await context.db
+      const [item] = await db
         .insert(concert)
         .values({
           id,
@@ -72,9 +70,9 @@ export const concertRouter = {
         venueId: z.string().optional(),
       })
     )
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       const { id, ...data } = input;
-      const [item] = await context.db
+      const [item] = await db
         .update(concert)
         .set(data)
         .where(eq(concert.id, id))
@@ -93,9 +91,9 @@ export const concertRouter = {
    */
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .handler(async ({ context, input }) => {
+    .handler(async ({ input }) => {
       // Check for any bookings across all showtimes of this concert
-      const [existingBooking] = await context.db
+      const [existingBooking] = await db
         .select({ id: booking.id })
         .from(booking)
         .innerJoin(showtime, eq(booking.showtimeId, showtime.id))
@@ -107,7 +105,7 @@ export const concertRouter = {
         });
       }
 
-      const [item] = await context.db
+      const [item] = await db
         .delete(concert)
         .where(eq(concert.id, input.id))
         .returning();
