@@ -41,6 +41,12 @@
       "skillPath": "skills/turborepo/SKILL.md",
       "computedHash": "23b9416e87fb6030bf95357e380778a21afb841430e2db208ad974997be39901"
     },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    },
     "ultracite": {
       "source": "haydenbleasel/ultracite",
       "sourceType": "github",
