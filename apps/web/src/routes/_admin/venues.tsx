@@ -262,10 +262,10 @@ function ManageZones({ venueId }: { venueId: string }) {
         </CardHeader>
         <CardContent>
           <form
-            className="grid grid-cols-4 items-end gap-4"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
             onSubmit={handleAddZone}
           >
-            <Field>
+            <Field className="sm:col-span-2">
               <FieldLabel>Zone Name</FieldLabel>
               <Input name="name" placeholder="e.g. VIP, Economy" required />
             </Field>
@@ -277,7 +277,11 @@ function ManageZones({ venueId }: { venueId: string }) {
               <FieldLabel>Price</FieldLabel>
               <Input name="price" required step="0.01" type="number" />
             </Field>
-            <Button disabled={createZoneMutation.isPending} type="submit">
+            <Button
+              className="sm:col-span-2"
+              disabled={createZoneMutation.isPending}
+              type="submit"
+            >
               {createZoneMutation.isPending ? "Adding..." : "Add Zone"}
             </Button>
           </form>
