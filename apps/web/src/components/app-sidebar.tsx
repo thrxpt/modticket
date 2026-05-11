@@ -6,7 +6,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@modticket/ui/components/sidebar";
-import { CircleGauge, MapPin, Music, Ticket } from "lucide-react";
+import {
+  CircleGauge,
+  LayoutPanelLeft,
+  MapPin,
+  Music,
+  ReceiptText,
+  Ticket,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -28,6 +35,18 @@ const data = {
       title: "Venues",
       url: "/venues",
     },
+    {
+      icon: Ticket,
+      title: "Bookings & Tickets",
+      url: "/bookings",
+    },
+  ],
+  finance: [
+    {
+      icon: ReceiptText,
+      title: "Sales Report",
+      url: "/finance/sales-report",
+    },
   ],
 };
 
@@ -41,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <div className="flex w-full items-center gap-2 p-1.5">
               <div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Ticket className="size-5" />
+                <LayoutPanelLeft className="size-5" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
                 <span className="font-semibold">
@@ -60,6 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavMain items={data.finance} title="Finance" />
       </SidebarContent>
       <SidebarFooter>
         {userData?.user && <NavUser user={userData.user} />}

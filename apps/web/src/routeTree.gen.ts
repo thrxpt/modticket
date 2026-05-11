@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminVenuesRouteImport } from './routes/_admin/venues'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminConcertsRouteImport } from './routes/_admin/concerts'
+import { Route as AdminBookingsRouteImport } from './routes/_admin/bookings'
+import { Route as AdminFinanceSalesReportRouteImport } from './routes/_admin/finance/sales-report'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -45,43 +47,75 @@ const AdminConcertsRoute = AdminConcertsRouteImport.update({
   path: '/concerts',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminBookingsRoute = AdminBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminFinanceSalesReportRoute = AdminFinanceSalesReportRouteImport.update({
+  id: '/finance/sales-report',
+  path: '/finance/sales-report',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/bookings': typeof AdminBookingsRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/venues': typeof AdminVenuesRoute
+  '/finance/sales-report': typeof AdminFinanceSalesReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/bookings': typeof AdminBookingsRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
   '/venues': typeof AdminVenuesRoute
+  '/finance/sales-report': typeof AdminFinanceSalesReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteRouteWithChildren
   '/login': typeof LoginRoute
+  '/_admin/bookings': typeof AdminBookingsRoute
   '/_admin/concerts': typeof AdminConcertsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
   '/_admin/venues': typeof AdminVenuesRoute
+  '/_admin/finance/sales-report': typeof AdminFinanceSalesReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/concerts' | '/dashboard' | '/venues'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/bookings'
+    | '/concerts'
+    | '/dashboard'
+    | '/venues'
+    | '/finance/sales-report'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/concerts' | '/dashboard' | '/venues'
+  to:
+    | '/'
+    | '/login'
+    | '/bookings'
+    | '/concerts'
+    | '/dashboard'
+    | '/venues'
+    | '/finance/sales-report'
   id:
     | '__root__'
     | '/'
     | '/_admin'
     | '/login'
+    | '/_admin/bookings'
     | '/_admin/concerts'
     | '/_admin/dashboard'
     | '/_admin/venues'
+    | '/_admin/finance/sales-report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,19 +168,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConcertsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_admin/bookings': {
+      id: '/_admin/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AdminBookingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_admin/finance/sales-report': {
+      id: '/_admin/finance/sales-report'
+      path: '/finance/sales-report'
+      fullPath: '/finance/sales-report'
+      preLoaderRoute: typeof AdminFinanceSalesReportRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
 interface AdminRouteRouteChildren {
+  AdminBookingsRoute: typeof AdminBookingsRoute
   AdminConcertsRoute: typeof AdminConcertsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminVenuesRoute: typeof AdminVenuesRoute
+  AdminFinanceSalesReportRoute: typeof AdminFinanceSalesReportRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminBookingsRoute: AdminBookingsRoute,
   AdminConcertsRoute: AdminConcertsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminVenuesRoute: AdminVenuesRoute,
+  AdminFinanceSalesReportRoute: AdminFinanceSalesReportRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
