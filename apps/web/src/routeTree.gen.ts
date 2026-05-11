@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/_admin/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminVenuesRouteImport } from './routes/_admin/venues'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminConcertsRouteImport } from './routes/_admin/concerts'
 
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVenuesRoute = AdminVenuesRouteImport.update({
+  id: '/venues',
+  path: '/venues',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -45,12 +51,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/venues': typeof AdminVenuesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
+  '/venues': typeof AdminVenuesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +67,13 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_admin/concerts': typeof AdminConcertsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/venues': typeof AdminVenuesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/concerts' | '/dashboard'
+  fullPaths: '/' | '/login' | '/concerts' | '/dashboard' | '/venues'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/concerts' | '/dashboard'
+  to: '/' | '/login' | '/concerts' | '/dashboard' | '/venues'
   id:
     | '__root__'
     | '/'
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_admin/concerts'
     | '/_admin/dashboard'
+    | '/_admin/venues'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -103,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/venues': {
+      id: '/_admin/venues'
+      path: '/venues'
+      fullPath: '/venues'
+      preLoaderRoute: typeof AdminVenuesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_admin/dashboard': {
       id: '/_admin/dashboard'
       path: '/dashboard'
@@ -123,11 +140,13 @@ declare module '@tanstack/react-router' {
 interface AdminRouteRouteChildren {
   AdminConcertsRoute: typeof AdminConcertsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminVenuesRoute: typeof AdminVenuesRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminConcertsRoute: AdminConcertsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminVenuesRoute: AdminVenuesRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
