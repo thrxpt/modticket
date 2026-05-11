@@ -16,7 +16,7 @@ export const showtimeRouter = {
   list: publicProcedure
     .input(z.object({ concertId: z.string().optional() }))
     .handler(async ({ input }) => {
-      if (input.concertId) {
+      if (input?.concertId) {
         return await db
           .select()
           .from(showtime)
