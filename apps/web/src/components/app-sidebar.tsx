@@ -1,12 +1,15 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
 } from "@modticket/ui/components/sidebar";
 import { CircleGauge, Ticket } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 import { NavMain } from "./nav-main";
+import { NavUser } from "./nav-user";
 
 const data = {
   navMain: [
@@ -19,6 +22,8 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: userData } = authClient.useSession();
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -46,6 +51,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      <SidebarFooter>
+        {userData?.user && <NavUser user={userData.user} />}
+      </SidebarFooter>
     </Sidebar>
   );
 }
