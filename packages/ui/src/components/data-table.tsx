@@ -34,6 +34,7 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  placeholder?: string;
   searchKey?: string;
 }
 
@@ -41,11 +42,13 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
+  placeholder,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  const [globalFilter, setGlobalFilter] = React.useState("");
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -55,6 +58,7 @@ export function DataTable<TData, TValue>({
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -64,6 +68,7 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       columnFilters,
+      globalFilter,
       columnVisibility,
       rowSelection,
     },
@@ -72,18 +77,27 @@ export function DataTable<TData, TValue>({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        {searchKey && (
-          <Input
-            className="h-8 w-[150px] lg:w-[250px]"
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
-            placeholder={`Filter ${searchKey}...`}
-            value={
-              (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""
-            }
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {searchKey ? (
+            <Input
+              className="h-8 w-[150px] lg:w-[250px]"
+              onChange={(event) =>
+                table.getColumn(searchKey)?.setFilterValue(event.target.value)
+              }
+              placeholder={placeholder ?? `Filter ${searchKey}...`}
+              value={
+                (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""
+              }
+            />
+          ) : (
+            <Input
+              className="h-8 w-[150px] lg:w-[250px]"
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              placeholder={placeholder ?? "Search..."}
+              value={globalFilter}
+            />
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={

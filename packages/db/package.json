@@ -21,7 +21,6 @@
     "db:seed": "bun --env-file=../../apps/server/.env run ./src/seed.ts"
   },
   "dependencies": {
-    "@modticket/auth": "workspace:*",
     "@modticket/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",

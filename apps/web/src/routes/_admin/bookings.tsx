@@ -86,11 +86,16 @@ function SummaryCard({
 }
 
 function BookingsComponent() {
-  const { data: bookings, isLoading } = useQuery(
+  const { data: bookings, isLoading: isLoadingBookings } = useQuery(
     orpc.booking.listAll.queryOptions()
   );
 
+  const { data: tickets, isLoading: isLoadingTickets } = useQuery(
+    orpc.ticket.listAll.queryOptions()
+  );
+
   type Booking = NonNullable<typeof bookings>[number];
+  type TicketType = NonNullable<typeof tickets>[number];
 
   const totalBookings = bookings?.length ?? 0;
   const confirmedBookings =
@@ -101,7 +106,7 @@ function BookingsComponent() {
     bookings?.reduce((sum, booking) => sum + Number(booking.totalAmount), 0) ??
     0;
 
-  const columns = useMemo<ColumnDef<Booking>[]>(
+  const bookingColumns = useMemo<ColumnDef<Booking>[]>(
     () => [
       {
         accessorKey: "id",
@@ -160,6 +165,76 @@ function BookingsComponent() {
     []
   );
 
+  const ticketColumns = useMemo<ColumnDef<TicketType>[]>(
+    () => [
+      {
+        accessorKey: "id",
+        cell: ({ row }) => (
+          <div className="max-w-32 truncate font-mono text-xs">
+            {row.getValue("id")}
+          </div>
+        ),
+        header: "Ticket ID",
+      },
+      {
+        accessorFn: (row) =>
+          `${row.booking?.user?.name ?? ""} ${row.booking?.user?.email ?? ""}`,
+        cell: ({ row }) => {
+          const ticket = row.original;
+          const ownerName = ticket.booking?.user?.name;
+          const ownerEmail = ticket.booking?.user?.email;
+          return (
+            <div className="text-sm">
+              <div className="font-medium">{ownerName || "Unknown"}</div>
+              <div className="text-muted-foreground text-xs">{ownerEmail}</div>
+            </div>
+          );
+        },
+        header: "Owner",
+        id: "owner",
+      },
+      {
+        accessorFn: (row) => row.showtime?.concert?.name ?? "",
+        cell: ({ row }) => {
+          const ticket = row.original;
+          return (
+            <div className="font-medium text-sm">
+              {ticket.showtime?.concert?.name || "Unknown Concert"}
+            </div>
+          );
+        },
+        header: "Concert",
+        id: "concert",
+      },
+      {
+        id: "showtime",
+        cell: ({ row }) => {
+          const ticket = row.original;
+          const date = ticket.showtime?.showDatetime;
+          return (
+            <div className="text-muted-foreground text-sm">
+              {date ? format(new Date(date), "PPp") : "N/A"}
+            </div>
+          );
+        },
+        header: "Showtime",
+      },
+      {
+        id: "seat",
+        cell: ({ row }) => {
+          const ticket = row.original;
+          return (
+            <div className="font-medium text-sm">
+              {ticket.seat?.seatNumber || "N/A"}
+            </div>
+          );
+        },
+        header: "Seat",
+      },
+    ],
+    []
+  );
+
   return (
     <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
       <div className="space-y-6">
@@ -213,15 +288,34 @@ function BookingsComponent() {
             <CardTitle className="text-xl">All bookings</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            {isLoading ? (
+            {isLoadingBookings ? (
               <div className="py-10 text-center text-muted-foreground text-sm">
                 Loading bookings...
               </div>
             ) : (
               <DataTable
-                columns={columns}
+                columns={bookingColumns}
                 data={bookings ?? []}
                 searchKey="id"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+          <CardHeader className="border-border/70 border-b px-6 py-5">
+            <CardTitle className="text-xl">All tickets</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoadingTickets ? (
+              <div className="py-10 text-center text-muted-foreground text-sm">
+                Loading tickets...
+              </div>
+            ) : (
+              <DataTable
+                columns={ticketColumns}
+                data={tickets ?? []}
+                placeholder="Search name, email or concert..."
               />
             )}
           </CardContent>

@@ -125,7 +125,6 @@
     "packages/db": {
       "name": "@modticket/db",
       "dependencies": {
-        "@modticket/auth": "workspace:*",
         "@modticket/env": "workspace:*",
         "dotenv": "catalog:",
         "drizzle-orm": "^0.45.1",
