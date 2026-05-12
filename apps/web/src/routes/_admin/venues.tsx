@@ -241,7 +241,7 @@ function ManageZones({ venueId }: { venueId: string }) {
       {
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }) => `$${row.getValue("price")}`,
+        cell: ({ row }) => `฿${row.getValue("price")}`,
       },
       {
         id: "actions",
