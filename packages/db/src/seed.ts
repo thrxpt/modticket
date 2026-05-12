@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { auth } from "@modticket/auth";
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { UniqueEnforcer } from "enforce-unique";
 import { db } from ".";
 import * as schema from "./schema";
@@ -10,9 +10,28 @@ const ORGANIZER_COUNT = 5;
 const VENUE_COUNT = 3;
 const CONCERT_COUNT = 10;
 const BOOKING_COUNT = 100;
+const SHOWTIMES_PER_CONCERT = 2;
+const MAX_SEATS_PER_ZONE = 20;
+const MAX_SEATS_PER_BOOKING = 4;
+const DEFAULT_PASSWORD = "password123";
+const ADMIN_USER = {
+  name: "Admin",
+  email: "admin@modticket.com",
+  password: DEFAULT_PASSWORD,
+  role: "admin",
+  phone: "+66000000000",
+  birthDate: new Date("1990-01-01"),
+  gender: "male",
+} as const;
+
+type Seat = typeof schema.seat.$inferSelect;
+type Showtime = typeof schema.showtime.$inferSelect;
+type Venue = typeof schema.venue.$inferSelect;
+type Zone = typeof schema.zone.$inferSelect;
 
 const uniqueEnforcerEmail = new UniqueEnforcer();
 const uniqueEnforcerPhone = new UniqueEnforcer();
+const uniqueEnforcerTransactionRef = new UniqueEnforcer();
 
 function createRandomUser() {
   const firstName = faker.person.firstName();
@@ -26,12 +45,58 @@ function createRandomUser() {
   return {
     name: `${firstName} ${lastName}`,
     email,
-    password: "password123",
+    password: DEFAULT_PASSWORD,
     role: "user",
     phone,
     birthDate: faker.date.birthdate(),
     gender: faker.helpers.arrayElement(schema.genderEnum.enumValues),
   };
+}
+
+function createVenueZones(venue: Venue) {
+  const vipCapacity = Math.floor(venue.capacity * 0.1);
+  const regularCapacity = Math.floor(venue.capacity * 0.6);
+  const economyCapacity = venue.capacity - vipCapacity - regularCapacity;
+
+  return [
+    {
+      id: crypto.randomUUID(),
+      name: "VIP",
+      capacity: vipCapacity,
+      price: "5000.00",
+      venueId: venue.id,
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Regular",
+      capacity: regularCapacity,
+      price: "2000.00",
+      venueId: venue.id,
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Economy",
+      capacity: economyCapacity,
+      price: "1000.00",
+      venueId: venue.id,
+    },
+  ] satisfies (typeof schema.zone.$inferInsert)[];
+}
+
+function createSeatsForZone(zone: Zone) {
+  const seatCount = Math.min(MAX_SEATS_PER_ZONE, zone.capacity);
+
+  return Array.from({ length: seatCount }, (_, index) => ({
+    id: crypto.randomUUID(),
+    seatNumber: `${zone.name[0]}${index + 1}`,
+    zoneId: zone.id,
+  })) satisfies (typeof schema.seat.$inferInsert)[];
+}
+
+function createTransactionRef() {
+  return uniqueEnforcerTransactionRef.enforce(() =>
+    faker.string.alphanumeric(10).toUpperCase()
+  );
 }
 
 async function seed() {
@@ -47,14 +112,14 @@ async function seed() {
   console.log("👑 Creating admin...");
   const admin = await auth.api.createUser({
     body: {
-      name: "Admin",
-      email: "admin@modticket.com",
-      password: "password123",
-      role: "admin",
+      name: ADMIN_USER.name,
+      email: ADMIN_USER.email,
+      password: ADMIN_USER.password,
+      role: ADMIN_USER.role,
       data: {
-        phone: "+66000000000",
-        birthDate: new Date("1990-01-01"),
-        gender: "male",
+        phone: ADMIN_USER.phone,
+        birthDate: ADMIN_USER.birthDate,
+        gender: ADMIN_USER.gender,
       },
     },
   });
@@ -112,52 +177,22 @@ async function seed() {
   console.log(`✅ ${VENUE_COUNT} venues created`);
 
   console.log("📍 Creating zones and seats for each venue...");
-  const allSeats: (typeof schema.seat.$inferSelect)[] = [];
-  const venueZones: Map<string, (typeof schema.zone.$inferSelect)[]> =
-    new Map();
+  const allSeats: Seat[] = [];
+  const venueZones = new Map<string, Zone[]>();
 
   for (const venue of venues) {
     const zones = await db
       .insert(schema.zone)
-      .values([
-        {
-          id: crypto.randomUUID(),
-          name: "VIP",
-          capacity: Math.floor(venue.capacity * 0.1),
-          price: "5000.00",
-          venueId: venue.id,
-        },
-        {
-          id: crypto.randomUUID(),
-          name: "Regular",
-          capacity: Math.floor(venue.capacity * 0.6),
-          price: "2000.00",
-          venueId: venue.id,
-        },
-        {
-          id: crypto.randomUUID(),
-          name: "Economy",
-          capacity: Math.floor(venue.capacity * 0.3),
-          price: "1000.00",
-          venueId: venue.id,
-        },
-      ])
+      .values(createVenueZones(venue))
       .returning();
 
     venueZones.set(venue.id, zones);
 
     for (const zone of zones) {
       // Create a few seats for each zone (not filling entirely to keep seed fast)
-      const seatCount = Math.min(20, zone.capacity);
       const seats = await db
         .insert(schema.seat)
-        .values(
-          Array.from({ length: seatCount }).map((_, i) => ({
-            id: crypto.randomUUID(),
-            seatNumber: `${zone.name[0]}${i + 1}`,
-            zoneId: zone.id,
-          }))
-        )
+        .values(createSeatsForZone(zone))
         .returning();
       allSeats.push(...seats);
     }
@@ -188,12 +223,12 @@ async function seed() {
   console.log(`✅ ${CONCERT_COUNT} concerts created`);
 
   console.log("📅 Creating showtimes and showtime seats...");
-  const showtimes: (typeof schema.showtime.$inferSelect)[] = [];
+  const showtimes: Showtime[] = [];
   for (const concert of concerts) {
     const concertShowtimes = await db
       .insert(schema.showtime)
       .values(
-        Array.from({ length: 2 }).map((_, _i) => ({
+        Array.from({ length: SHOWTIMES_PER_CONCERT }).map(() => ({
           id: crypto.randomUUID(),
           showDatetime: faker.date.future(),
           status: "upcoming" as const,
@@ -207,7 +242,7 @@ async function seed() {
 
     // Create showtime seats for each showtime
     // Find seats belonging to the venue of this concert
-    const zonesInVenue = venueZones.get(concert.venueId) || [];
+    const zonesInVenue = venueZones.get(concert.venueId) ?? [];
     const zoneIds = zonesInVenue.map((z) => z.id);
     const seatsInVenue = allSeats.filter((s) => zoneIds.includes(s.zoneId));
 
@@ -224,22 +259,32 @@ async function seed() {
   console.log(`✅ ${showtimes.length} showtimes and their seats created`);
 
   console.log(`🎟️ Creating ${BOOKING_COUNT} bookings...`);
+  let createdBookingCount = 0;
   for (let i = 0; i < BOOKING_COUNT; i++) {
     const user = faker.helpers.arrayElement(userIds);
     const showtime = faker.helpers.arrayElement(showtimes);
+    const seatsRequested = faker.number.int({
+      min: 1,
+      max: MAX_SEATS_PER_BOOKING,
+    });
 
     // Get available seats for this showtime
     const availableSeats = await db
       .select()
       .from(schema.showtimeSeat)
       .where(
-        sql`${schema.showtimeSeat.showtimeId} = ${showtime.id} AND ${schema.showtimeSeat.isAvailable} = true`
+        and(
+          eq(schema.showtimeSeat.showtimeId, showtime.id),
+          eq(schema.showtimeSeat.isAvailable, true)
+        )
       )
-      .limit(faker.number.int({ min: 1, max: 4 }));
+      .limit(seatsRequested);
 
     if (availableSeats.length === 0) {
       continue;
     }
+
+    const availableSeatIds = availableSeats.map((seat) => seat.seatId);
 
     // Get zone info for prices
     const seatsInfo = await db
@@ -248,54 +293,64 @@ async function seed() {
         price: schema.zone.price,
       })
       .from(schema.seat)
-      .innerJoin(schema.zone, sql`${schema.seat.zoneId} = ${schema.zone.id}`)
-      .where(sql`${schema.seat.id} IN ${availableSeats.map((s) => s.seatId)}`);
+      .innerJoin(schema.zone, eq(schema.seat.zoneId, schema.zone.id))
+      .where(inArray(schema.seat.id, availableSeatIds));
 
     const totalAmount = seatsInfo.reduce((sum, s) => sum + Number(s.price), 0);
+    const formattedTotalAmount = totalAmount.toFixed(2);
 
-    const [booking] = await db
-      .insert(schema.booking)
-      .values({
+    await db.transaction(async (tx) => {
+      const [booking] = await tx
+        .insert(schema.booking)
+        .values({
+          id: crypto.randomUUID(),
+          showtimeId: showtime.id,
+          userId: user,
+          totalAmount: formattedTotalAmount,
+          status: "confirmed",
+          bookingDate: new Date(),
+        })
+        .returning();
+
+      if (!booking) {
+        throw new Error("Booking insert did not return a row.");
+      }
+
+      await tx.insert(schema.payment).values({
         id: crypto.randomUUID(),
-        showtimeId: showtime.id,
-        userId: user,
-        totalAmount: totalAmount.toFixed(2),
-        status: "confirmed",
-        bookingDate: new Date(),
-      })
-      .returning();
-
-    // Create payment
-    await db.insert(schema.payment).values({
-      id: crypto.randomUUID(),
-      amount: totalAmount.toFixed(2),
-      bookingId: booking.id,
-      paymentDate: new Date(),
-      paymentMethod: faker.helpers.arrayElement(
-        schema.paymentMethodEnum.enumValues
-      ),
-      paymentStatus: "paid",
-      transactionRef: faker.string.alphanumeric(10).toUpperCase(),
-    });
-
-    // Create tickets and update showtime seats
-    for (const seat of seatsInfo) {
-      await db.insert(schema.ticket).values({
-        id: crypto.randomUUID(),
+        amount: formattedTotalAmount,
         bookingId: booking.id,
-        seatId: seat.id,
-        showtimeId: showtime.id,
+        paymentDate: new Date(),
+        paymentMethod: faker.helpers.arrayElement(
+          schema.paymentMethodEnum.enumValues
+        ),
+        paymentStatus: "paid",
+        transactionRef: createTransactionRef(),
       });
 
-      await db
+      await tx.insert(schema.ticket).values(
+        seatsInfo.map((seat) => ({
+          id: crypto.randomUUID(),
+          bookingId: booking.id,
+          seatId: seat.id,
+          showtimeId: showtime.id,
+        }))
+      );
+
+      await tx
         .update(schema.showtimeSeat)
         .set({ isAvailable: false })
         .where(
-          sql`${schema.showtimeSeat.showtimeId} = ${showtime.id} AND ${schema.showtimeSeat.seatId} = ${seat.id}`
+          and(
+            eq(schema.showtimeSeat.showtimeId, showtime.id),
+            inArray(schema.showtimeSeat.seatId, availableSeatIds)
+          )
         );
-    }
+    });
+
+    createdBookingCount++;
   }
-  console.log(`✅ ${BOOKING_COUNT} bookings created`);
+  console.log(`✅ ${createdBookingCount} bookings created`);
 
   console.log("✨ Seeding completed successfully!");
 }
