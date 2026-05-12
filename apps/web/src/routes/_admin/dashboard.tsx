@@ -428,26 +428,28 @@ function RouteComponent() {
             </div>
           </div>
 
-          <div className="rounded-lg bg-foreground p-5 text-background">
-            <p className="text-background/60 text-sm">Live checkout preview</p>
+          <div className="flex flex-col justify-center rounded-lg border bg-muted/40 p-5 text-foreground">
+            <p className="text-muted-foreground text-sm">
+              Live checkout preview
+            </p>
             <h2 className="mt-2 font-semibold text-2xl">
               {topSeller?.name ?? "Waiting for ticket activity"}
             </h2>
             <div className="mt-8 grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-background/15 p-3">
-                <p className="text-background/55 text-xs">Sold</p>
+              <div className="rounded-md border bg-background/50 p-3 shadow-sm">
+                <p className="text-muted-foreground text-xs">Sold</p>
                 <p className="mt-2 font-semibold text-2xl tabular-nums">
                   {topSeller?.ticketsSold.toLocaleString() ?? "0"}
                 </p>
               </div>
-              <div className="rounded-md border border-background/15 p-3">
-                <p className="text-background/55 text-xs">Revenue</p>
+              <div className="rounded-md border bg-background/50 p-3 shadow-sm">
+                <p className="text-muted-foreground text-xs">Revenue</p>
                 <p className="mt-2 font-semibold text-2xl tabular-nums">
                   {formatCurrency(topSeller?.revenue ?? 0)}
                 </p>
               </div>
             </div>
-            <div className="mt-5 flex items-center gap-2 text-background/60 text-sm">
+            <div className="mt-5 flex items-center gap-2 text-muted-foreground text-sm">
               <MapPin className="size-4" />
               Capacity and payment data are synced.
             </div>
