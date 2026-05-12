@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 
 import { publicProcedure } from "../index";
+import { analyticsRouter } from "./analytics";
 import { bookingRouter } from "./booking";
 import { concertRouter } from "./concert";
 import { organizerRouter } from "./organizer";
@@ -18,6 +19,7 @@ export const appRouter = {
   showtime: showtimeRouter,
   venue: venueRouter,
   ticket: ticketRouter,
+  analytics: analyticsRouter,
 };
 
 export type AppRouter = typeof appRouter;

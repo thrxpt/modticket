@@ -7,9 +7,9 @@ import * as schema from "./schema";
 
 const USER_COUNT = 500;
 const ORGANIZER_COUNT = 30;
-const VENUE_COUNT = 15;
-const CONCERT_COUNT = 50;
-const BOOKING_COUNT = 1000;
+const VENUE_COUNT = 20;
+const CONCERT_COUNT = 80;
+const BOOKING_COUNT = 5000;
 const SHOWTIMES_PER_CONCERT = 3;
 const MAX_SEATS_PER_ZONE = 200;
 const MAX_SEATS_PER_BOOKING = 6;
@@ -58,26 +58,29 @@ function createVenueZones(venue: Venue) {
   const regularCapacity = Math.floor(venue.capacity * 0.6);
   const economyCapacity = venue.capacity - vipCapacity - regularCapacity;
 
+  // Add more variation to prices between venues
+  const basePrice = faker.number.int({ min: 5, max: 20 }) * 100;
+
   return [
     {
       id: crypto.randomUUID(),
       name: "VIP",
       capacity: vipCapacity,
-      price: "5000.00",
+      price: (basePrice * 4).toFixed(2),
       venueId: venue.id,
     },
     {
       id: crypto.randomUUID(),
       name: "Regular",
       capacity: regularCapacity,
-      price: "2000.00",
+      price: (basePrice * 2).toFixed(2),
       venueId: venue.id,
     },
     {
       id: crypto.randomUUID(),
       name: "Economy",
       capacity: economyCapacity,
-      price: "1000.00",
+      price: basePrice.toFixed(2),
       venueId: venue.id,
     },
   ] satisfies (typeof schema.zone.$inferInsert)[];
@@ -95,7 +98,13 @@ function createSeatsForZone(zone: Zone) {
 
 function createTransactionRef() {
   return uniqueEnforcerTransactionRef.enforce(() =>
-    faker.string.alphanumeric(10).toUpperCase()
+    faker.string.alphanumeric(12).toUpperCase()
+  );
+}
+
+function randomDate(start: Date, end: Date) {
+  return new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
   );
 }
 
@@ -126,24 +135,25 @@ async function seed() {
   console.log("✅ Admin created successfully:", admin.user.email);
 
   console.log(`👥 Creating ${USER_COUNT} users...`);
-  const userIds: string[] = [];
-  for (let i = 0; i < USER_COUNT; i++) {
+  const usersToInsert = Array.from({ length: USER_COUNT }).map(() => {
     const userData = createRandomUser();
-    const result = await auth.api.createUser({
-      body: {
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        role: "user",
-        data: {
-          phone: userData.phone,
-          birthDate: userData.birthDate,
-          gender: userData.gender,
-        },
-      },
-    });
-    userIds.push(result.user.id);
-  }
+    return {
+      id: crypto.randomUUID(),
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      birthDate: userData.birthDate.toISOString().split("T")[0],
+      gender: userData.gender,
+      role: "user",
+      emailVerified: true,
+    };
+  });
+
+  const insertedUsers = await db
+    .insert(schema.user)
+    .values(usersToInsert)
+    .returning({ id: schema.user.id });
+  const userIds = insertedUsers.map((u) => u.id);
   console.log(`✅ ${USER_COUNT} users created`);
 
   console.log(`🏢 Creating ${ORGANIZER_COUNT} organizers...`);
@@ -213,7 +223,12 @@ async function seed() {
             width: 400,
             height: 600,
           }),
-          status: "published" as const,
+          status: faker.helpers.weightedArrayElement([
+            { weight: 70, value: "published" },
+            { weight: 20, value: "completed" },
+            { weight: 5, value: "draft" },
+            { weight: 5, value: "cancelled" },
+          ]) as "published" | "completed" | "draft" | "cancelled",
           organizedBy: faker.helpers.arrayElement(organizers).id,
           venueId: venue.id,
         };
@@ -224,24 +239,42 @@ async function seed() {
 
   console.log("📅 Creating showtimes and showtime seats...");
   const showtimes: Showtime[] = [];
+  const now = new Date();
+  const pastYear = new Date(
+    now.getFullYear() - 1,
+    now.getMonth(),
+    now.getDate()
+  );
+  const nextYear = new Date(
+    now.getFullYear() + 1,
+    now.getMonth(),
+    now.getDate()
+  );
+
   for (const concert of concerts) {
     const concertShowtimes = await db
       .insert(schema.showtime)
       .values(
-        Array.from({ length: SHOWTIMES_PER_CONCERT }).map(() => ({
-          id: crypto.randomUUID(),
-          showDatetime: faker.date.future(),
-          status: "upcoming" as const,
-          concertId: concert.id,
-          venueId: concert.venueId,
-        }))
+        Array.from({ length: SHOWTIMES_PER_CONCERT }).map(() => {
+          const showDatetime = randomDate(pastYear, nextYear);
+          let status = "upcoming";
+          if (showDatetime < now) {
+            status = "ended";
+          }
+
+          return {
+            id: crypto.randomUUID(),
+            showDatetime,
+            status: status as "upcoming" | "ended",
+            concertId: concert.id,
+            venueId: concert.venueId,
+          };
+        })
       )
       .returning();
 
     showtimes.push(...concertShowtimes);
 
-    // Create showtime seats for each showtime
-    // Find seats belonging to the venue of this concert
     const zonesInVenue = venueZones.get(concert.venueId) ?? [];
     const zoneIds = zonesInVenue.map((z) => z.id);
     const seatsInVenue = allSeats.filter((s) => zoneIds.includes(s.zoneId));
@@ -268,7 +301,6 @@ async function seed() {
       max: MAX_SEATS_PER_BOOKING,
     });
 
-    // Get available seats for this showtime
     const availableSeats = await db
       .select()
       .from(schema.showtimeSeat)
@@ -286,7 +318,6 @@ async function seed() {
 
     const availableSeatIds = availableSeats.map((seat) => seat.seatId);
 
-    // Get zone info for prices
     const seatsInfo = await db
       .select({
         id: schema.seat.id,
@@ -299,6 +330,21 @@ async function seed() {
     const totalAmount = seatsInfo.reduce((sum, s) => sum + Number(s.price), 0);
     const formattedTotalAmount = totalAmount.toFixed(2);
 
+    // Spread booking dates between 60 days before showtime and showtime date
+    const sixtyDaysBefore = new Date(
+      showtime.showDatetime.getTime() - 60 * 24 * 60 * 60 * 1000
+    );
+    const bookingDate = randomDate(sixtyDaysBefore, showtime.showDatetime);
+
+    // Spread payment dates to either be immediately, or a few days after
+    const isPaid = faker.datatype.boolean(0.9); // 90% chance of being paid
+    const paymentStatus = isPaid ? "paid" : "pending";
+    const paymentDate = new Date(
+      bookingDate.getTime() + Math.random() * 3 * 24 * 60 * 60 * 1000
+    );
+
+    const bookingStatus = paymentStatus === "paid" ? "confirmed" : "pending";
+
     await db.transaction(async (tx) => {
       const [booking] = await tx
         .insert(schema.booking)
@@ -307,8 +353,9 @@ async function seed() {
           showtimeId: showtime.id,
           userId: user,
           totalAmount: formattedTotalAmount,
-          status: "confirmed",
-          bookingDate: new Date(),
+          status: bookingStatus,
+          bookingDate,
+          createdAt: bookingDate,
         })
         .returning();
 
@@ -320,32 +367,35 @@ async function seed() {
         id: crypto.randomUUID(),
         amount: formattedTotalAmount,
         bookingId: booking.id,
-        paymentDate: new Date(),
+        paymentDate,
         paymentMethod: faker.helpers.arrayElement(
           schema.paymentMethodEnum.enumValues
         ),
-        paymentStatus: "paid",
+        paymentStatus,
         transactionRef: createTransactionRef(),
       });
 
-      await tx.insert(schema.ticket).values(
-        seatsInfo.map((seat) => ({
-          id: crypto.randomUUID(),
-          bookingId: booking.id,
-          seatId: seat.id,
-          showtimeId: showtime.id,
-        }))
-      );
-
-      await tx
-        .update(schema.showtimeSeat)
-        .set({ isAvailable: false })
-        .where(
-          and(
-            eq(schema.showtimeSeat.showtimeId, showtime.id),
-            inArray(schema.showtimeSeat.seatId, availableSeatIds)
-          )
+      // Only create tickets and reserve seats if confirmed
+      if (bookingStatus === "confirmed") {
+        await tx.insert(schema.ticket).values(
+          seatsInfo.map((seat) => ({
+            id: crypto.randomUUID(),
+            bookingId: booking.id,
+            seatId: seat.id,
+            showtimeId: showtime.id,
+          }))
         );
+
+        await tx
+          .update(schema.showtimeSeat)
+          .set({ isAvailable: false })
+          .where(
+            and(
+              eq(schema.showtimeSeat.showtimeId, showtime.id),
+              inArray(schema.showtimeSeat.seatId, availableSeatIds)
+            )
+          );
+      }
     });
 
     createdBookingCount++;

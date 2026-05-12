@@ -16,6 +16,7 @@ import { Route as AdminVenuesRouteImport } from './routes/_admin/venues'
 import { Route as AdminDashboardRouteImport } from './routes/_admin/dashboard'
 import { Route as AdminConcertsRouteImport } from './routes/_admin/concerts'
 import { Route as AdminBookingsRouteImport } from './routes/_admin/bookings'
+import { Route as AdminAnalyticsRouteImport } from './routes/_admin/analytics'
 import { Route as AdminFinanceSalesReportRouteImport } from './routes/_admin/finance/sales-report'
 
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +53,11 @@ const AdminBookingsRoute = AdminBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminFinanceSalesReportRoute = AdminFinanceSalesReportRouteImport.update({
   id: '/finance/sales-report',
   path: '/finance/sales-report',
@@ -61,6 +67,7 @@ const AdminFinanceSalesReportRoute = AdminFinanceSalesReportRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analytics': typeof AdminAnalyticsRoute
   '/bookings': typeof AdminBookingsRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analytics': typeof AdminAnalyticsRoute
   '/bookings': typeof AdminBookingsRoute
   '/concerts': typeof AdminConcertsRoute
   '/dashboard': typeof AdminDashboardRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteRouteWithChildren
   '/login': typeof LoginRoute
+  '/_admin/analytics': typeof AdminAnalyticsRoute
   '/_admin/bookings': typeof AdminBookingsRoute
   '/_admin/concerts': typeof AdminConcertsRoute
   '/_admin/dashboard': typeof AdminDashboardRoute
@@ -92,6 +101,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/analytics'
     | '/bookings'
     | '/concerts'
     | '/dashboard'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/analytics'
     | '/bookings'
     | '/concerts'
     | '/dashboard'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_admin'
     | '/login'
+    | '/_admin/analytics'
     | '/_admin/bookings'
     | '/_admin/concerts'
     | '/_admin/dashboard'
@@ -175,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBookingsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_admin/analytics': {
+      id: '/_admin/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_admin/finance/sales-report': {
       id: '/_admin/finance/sales-report'
       path: '/finance/sales-report'
@@ -186,6 +205,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminConcertsRoute: typeof AdminConcertsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
@@ -194,6 +214,7 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminBookingsRoute: AdminBookingsRoute,
   AdminConcertsRoute: AdminConcertsRoute,
   AdminDashboardRoute: AdminDashboardRoute,

@@ -329,7 +329,8 @@ function ManageShowtimesPanel({
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const showDatetime = formData.get("showDatetime") as string;
 
     try {
@@ -344,7 +345,7 @@ function ManageShowtimesPanel({
         queryKey: orpc.showtime.list.queryOptions({ input: { concertId } })
           .queryKey,
       });
-      e.currentTarget.reset();
+      form.reset();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to create showtime"

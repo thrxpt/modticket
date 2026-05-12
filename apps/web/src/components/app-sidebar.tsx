@@ -6,7 +6,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@modticket/ui/components/sidebar";
-import { CircleGauge, MapPin, Music, ReceiptText, Ticket } from "lucide-react";
+import {
+  BarChart3,
+  CircleGauge,
+  MapPin,
+  Music,
+  ReceiptText,
+  Ticket,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -39,6 +46,11 @@ const data = {
       icon: ReceiptText,
       title: "Sales Report",
       url: "/finance/sales-report",
+    },
+    {
+      icon: BarChart3,
+      title: "Analytics",
+      url: "/analytics",
     },
   ],
 };
