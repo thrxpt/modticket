@@ -393,7 +393,7 @@ function RouteComponent() {
   return (
     <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
       <div className="space-y-6">
-        <section className="grid gap-6 rounded-lg border border-border/70 bg-card p-6 shadow-sm xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="grid gap-6 rounded-lg border border-border/70 bg-card p-6 shadow-sm xl:grid-cols-[minmax(0,1fr)_480px]">
           <div className="flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
