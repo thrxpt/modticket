@@ -451,12 +451,17 @@ function ManageShowtimesPanel({
   );
 }
 
-function ConcertRowActions({ concert }: { concert: Concert }) {
+function ConcertRowActions({
+  concert,
+  onEdit,
+}: {
+  concert: Concert;
+  onEdit: (concert: Concert) => void;
+}) {
   const deleteConcertMutation = useMutation(
     orpc.concert.delete.mutationOptions()
   );
   const queryClient = useQueryClient();
-  const [editSheetOpen, setEditSheetOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -474,27 +479,14 @@ function ConcertRowActions({ concert }: { concert: Concert }) {
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Sheet onOpenChange={setEditSheetOpen} open={editSheetOpen}>
-        <SheetTrigger
-          render={
-            <Button size="icon-sm" title="Edit Concert" variant="secondary">
-              <Edit className="size-4" />
-            </Button>
-          }
-        />
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Edit Concert</SheetTitle>
-            <SheetDescription>
-              Update the details for {concert.name}.
-            </SheetDescription>
-          </SheetHeader>
-          <EditConcertForm
-            concert={concert}
-            onSuccess={() => setEditSheetOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
+      <Button
+        onClick={() => onEdit(concert)}
+        size="icon-sm"
+        title="Edit Concert"
+        variant="secondary"
+      >
+        <Edit className="size-4" />
+      </Button>
 
       <Sheet>
         <SheetTrigger
@@ -557,6 +549,7 @@ function ConcertsComponent() {
   );
   const { data: venues } = useQuery(orpc.venue.list.queryOptions());
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [editingConcert, setEditingConcert] = useState<Concert | null>(null);
 
   const getVenueName = useCallback(
     (venueId: string) => venues?.find((v) => v.id === venueId)?.name || venueId,
@@ -606,7 +599,10 @@ function ConcertsComponent() {
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
           <div className="text-right">
-            <ConcertRowActions concert={row.original as Concert} />
+            <ConcertRowActions
+              concert={row.original as Concert}
+              onEdit={setEditingConcert}
+            />
           </div>
         ),
       },
@@ -704,6 +700,26 @@ function ConcertsComponent() {
           </CardContent>
         </Card>
       </div>
+
+      <Sheet
+        onOpenChange={(open) => !open && setEditingConcert(null)}
+        open={!!editingConcert}
+      >
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Edit Concert</SheetTitle>
+            <SheetDescription>
+              Update the details for {editingConcert?.name}.
+            </SheetDescription>
+          </SheetHeader>
+          {editingConcert && (
+            <EditConcertForm
+              concert={editingConcert}
+              onSuccess={() => setEditingConcert(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
