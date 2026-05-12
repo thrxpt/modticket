@@ -80,7 +80,11 @@ function CreateVenueForm({ onSuccess }: { onSuccess: () => void }) {
         <FieldLabel>Total Capacity</FieldLabel>
         <Input name="capacity" required type="number" />
       </Field>
-      <Button disabled={createMutation.isPending} type="submit">
+      <Button
+        className="mt-2 h-10 rounded-md"
+        disabled={createMutation.isPending}
+        type="submit"
+      >
         {createMutation.isPending ? "Creating..." : "Create Venue"}
       </Button>
     </form>
@@ -140,7 +144,11 @@ function EditVenueForm({
           type="number"
         />
       </Field>
-      <Button disabled={updateMutation.isPending} type="submit">
+      <Button
+        className="mt-2 h-10 rounded-md"
+        disabled={updateMutation.isPending}
+        type="submit"
+      >
         {updateMutation.isPending ? "Updating..." : "Update Venue"}
       </Button>
     </form>
@@ -275,9 +283,9 @@ function ManageZones({ venueId }: { venueId: string }) {
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      <Card>
+      <Card className="rounded-lg border-border/70 bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm">Add New Zone</CardTitle>
+          <CardTitle className="text-sm">Add new zone</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -297,7 +305,7 @@ function ManageZones({ venueId }: { venueId: string }) {
               <Input name="price" required step="0.01" type="number" />
             </Field>
             <Button
-              className="sm:col-span-2"
+              className="h-10 rounded-md sm:col-span-2"
               disabled={createZoneMutation.isPending}
               type="submit"
             >
@@ -308,7 +316,7 @@ function ManageZones({ venueId }: { venueId: string }) {
       </Card>
 
       {isLoading ? (
-        <div className="flex h-24 items-center justify-center rounded-md border text-sm">
+        <div className="flex h-24 items-center justify-center rounded-lg border border-border/70 bg-card text-sm">
           Loading zones...
         </div>
       ) : (
@@ -357,6 +365,9 @@ function VenuesComponent() {
     () => [
       {
         accessorKey: "name",
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("name")}</div>
+        ),
         header: ({ column }) => (
           <Button
             className="-ml-4 h-8"
@@ -367,19 +378,16 @@ function VenuesComponent() {
             <ArrowUpDown className="ml-2 size-4" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <div className="font-medium">{row.getValue("name")}</div>
-        ),
       },
       {
         accessorKey: "location",
-        header: "Location",
         cell: ({ row }) => (
           <div className="flex items-center gap-1 text-muted-foreground">
             <MapPin className="size-3" />
             {row.getValue("location")}
           </div>
         ),
+        header: "Location",
       },
       {
         accessorKey: "capacity",
@@ -405,21 +413,21 @@ function VenuesComponent() {
                 onClick={() =>
                   setManagingVenue({ id: venue.id, name: venue.name })
                 }
-                size="icon"
-                variant="ghost"
+                size="icon-sm"
+                variant="secondary"
               >
                 <Layers className="size-4" />
               </Button>
               <Button
                 onClick={() => setEditingVenue(venue)}
-                size="icon"
-                variant="ghost"
+                size="icon-sm"
+                variant="secondary"
               >
                 <Edit className="size-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger
-                  render={<Button size="icon" variant="ghost" />}
+                  render={<Button size="icon-sm" variant="destructive" />}
                 >
                   <Trash2 className="size-4 text-destructive" />
                 </AlertDialogTrigger>
@@ -452,32 +460,94 @@ function VenuesComponent() {
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-bold text-2xl">Venues</h1>
-        <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
-          <SheetTrigger render={<Button />}>
-            <Plus className="mr-2 size-4" /> Add Venue
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Create Venue</SheetTitle>
-              <SheetDescription>
-                Add a new venue to the system.
-              </SheetDescription>
-            </SheetHeader>
-            <CreateVenueForm onSuccess={() => setIsCreateOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
+    <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6">
+        <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <MapPin className="size-4 text-foreground" />
+                Venue inventory
+              </div>
+              <p className="mt-2 text-muted-foreground text-sm">
+                Keep every stage, hall, and seating zone organized.
+              </p>
+            </div>
+            <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
+              <SheetTrigger
+                render={
+                  <Button className="h-11 rounded-md">
+                    <Plus className="size-4" />
+                    Add venue
+                  </Button>
+                }
+              />
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Create venue</SheetTitle>
+                  <SheetDescription>
+                    Add a new venue to the system.
+                  </SheetDescription>
+                </SheetHeader>
+                <CreateVenueForm onSuccess={() => setIsCreateOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
+        </section>
 
-      {isLoading ? (
-        <div className="flex h-24 items-center justify-center rounded-md border">
-          Loading venues...
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Total venues</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {(venues?.length ?? 0).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Total capacity</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {(
+                  venues?.reduce((sum, venue) => sum + venue.capacity, 0) ?? 0
+                ).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Avg. capacity</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {venues && venues.length > 0
+                  ? Math.round(
+                      venues.reduce((sum, venue) => sum + venue.capacity, 0) /
+                        venues.length
+                    ).toLocaleString()
+                  : "0"}
+              </p>
+            </CardContent>
+          </Card>
         </div>
-      ) : (
-        <DataTable columns={columns} data={venues ?? []} searchKey="name" />
-      )}
+
+        <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+          <CardHeader className="border-border/70 border-b px-6 py-5">
+            <CardTitle className="text-xl">All venues</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoading ? (
+              <div className="flex h-24 items-center justify-center rounded-lg border border-border/70 text-muted-foreground text-sm">
+                Loading venues...
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={venues ?? []}
+                searchKey="name"
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Sheet
         onOpenChange={(open) => !open && setEditingVenue(null)}

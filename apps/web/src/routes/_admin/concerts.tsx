@@ -38,7 +38,14 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, Plus, Settings2, Trash2 } from "lucide-react";
+import {
+  ArrowUpDown,
+  Edit,
+  Music,
+  Plus,
+  Settings2,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/utils/orpc";
@@ -46,6 +53,21 @@ import { orpc } from "@/utils/orpc";
 export const Route = createFileRoute("/_admin/concerts")({
   component: ConcertsComponent,
 });
+
+function getConcertStatusClasses(status: string): string {
+  switch (status.toLowerCase()) {
+    case "published":
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    case "draft":
+      return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    case "completed":
+      return "border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300";
+    case "cancelled":
+      return "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
 
 function CreateConcertForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: venues, isLoading: venuesLoading } = useQuery(
@@ -139,7 +161,11 @@ function CreateConcertForm({ onSuccess }: { onSuccess: () => void }) {
           </SelectContent>
         </Select>
       </Field>
-      <Button disabled={createMutation.isPending} type="submit">
+      <Button
+        className="mt-2 h-10 rounded-md"
+        disabled={createMutation.isPending}
+        type="submit"
+      >
         {createMutation.isPending ? "Creating..." : "Create Concert"}
       </Button>
     </form>
@@ -276,7 +302,11 @@ function EditConcertForm({
           </SelectContent>
         </Select>
       </Field>
-      <Button disabled={updateMutation.isPending} type="submit">
+      <Button
+        className="mt-2 h-10 rounded-md"
+        disabled={updateMutation.isPending}
+        type="submit"
+      >
         {updateMutation.isPending ? "Updating..." : "Update Concert"}
       </Button>
     </form>
@@ -340,20 +370,24 @@ function ManageShowtimesPanel({
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Add New Showtime</h3>
+        <h3 className="font-medium text-sm">Add new showtime</h3>
         <form className="flex flex-col gap-3" onSubmit={handleCreate}>
           <Field>
             <FieldLabel>Show Datetime</FieldLabel>
             <Input name="showDatetime" required type="datetime-local" />
           </Field>
-          <Button disabled={createMutation.isPending} type="submit">
+          <Button
+            className="h-10 rounded-md"
+            disabled={createMutation.isPending}
+            type="submit"
+          >
             {createMutation.isPending ? "Adding..." : "Add Showtime"}
           </Button>
         </form>
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-medium text-sm">Existing Showtimes</h3>
+        <h3 className="font-medium text-sm">Existing showtimes</h3>
         {isLoading && (
           <p className="text-muted-foreground text-sm">Loading showtimes...</p>
         )}
@@ -366,7 +400,7 @@ function ManageShowtimesPanel({
           <div className="space-y-2">
             {showtimes.map((showtime) => (
               <div
-                className="flex items-center justify-between rounded-md border border-border p-3"
+                className="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3"
                 key={showtime.id}
               >
                 <div>
@@ -533,6 +567,9 @@ function ConcertsComponent() {
     () => [
       {
         accessorKey: "name",
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("name")}</div>
+        ),
         header: ({ column }) => (
           <Button
             className="-ml-4 h-8"
@@ -542,9 +579,6 @@ function ConcertsComponent() {
             Name
             <ArrowUpDown className="ml-2 size-4" />
           </Button>
-        ),
-        cell: ({ row }) => (
-          <div className="font-medium">{row.getValue("name")}</div>
         ),
       },
       {
@@ -558,12 +592,14 @@ function ConcertsComponent() {
       },
       {
         accessorKey: "status",
-        header: "Status",
         cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold text-xs capitalize">
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 font-medium text-[11px] uppercase tracking-[0.16em] ${getConcertStatusClasses(row.getValue("status"))}`}
+          >
             {row.getValue("status")}
           </span>
         ),
+        header: "Status",
       },
       {
         id: "actions",
@@ -579,53 +615,95 @@ function ConcertsComponent() {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Concerts</h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Manage your concerts and their showtimes here.
-          </p>
-        </div>
-        <Sheet onOpenChange={setCreateSheetOpen} open={createSheetOpen}>
-          <SheetTrigger
-            render={
-              <Button>
-                <Plus className="mr-2 size-4" />
-                New Concert
-              </Button>
-            }
-          />
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Create Concert</SheetTitle>
-              <SheetDescription>
-                Fill in the details to create a new concert.
-              </SheetDescription>
-            </SheetHeader>
-            <CreateConcertForm onSuccess={() => setCreateSheetOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <Card>
-        <CardHeader className="border-b px-6 py-5">
-          <CardTitle className="text-lg">All Concerts</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">
-              Loading concerts...
+    <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6">
+        <section className="rounded-lg border border-border/70 bg-card p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Music className="size-4 text-foreground" />
+                Concert catalog
+              </div>
+              <p className="mt-2 text-muted-foreground text-sm">
+                Shape the shows customers can discover and book.
+              </p>
             </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={(concerts as Concert[]) ?? []}
-              searchKey="name"
-            />
-          )}
-        </CardContent>
-      </Card>
+            <Sheet onOpenChange={setCreateSheetOpen} open={createSheetOpen}>
+              <SheetTrigger
+                render={
+                  <Button className="h-11 rounded-md">
+                    <Plus className="size-4" />
+                    New concert
+                  </Button>
+                }
+              />
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Create concert</SheetTitle>
+                  <SheetDescription>
+                    Fill in the details to create a new concert.
+                  </SheetDescription>
+                </SheetHeader>
+                <CreateConcertForm
+                  onSuccess={() => setCreateSheetOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+        </section>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Total concerts</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {(concerts?.length ?? 0).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Published</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {(
+                  concerts?.filter((concert) => concert.status === "published")
+                    .length ?? 0
+                ).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-muted-foreground text-sm">Drafts</p>
+              <p className="mt-2 font-semibold text-3xl tabular-nums">
+                {(
+                  concerts?.filter((concert) => concert.status === "draft")
+                    .length ?? 0
+                ).toLocaleString()}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+          <CardHeader className="border-border/70 border-b px-6 py-5">
+            <CardTitle className="text-xl">All concerts</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoading ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">
+                Loading concerts...
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={(concerts as Concert[]) ?? []}
+                searchKey="name"
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

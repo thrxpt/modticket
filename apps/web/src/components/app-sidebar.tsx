@@ -6,14 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@modticket/ui/components/sidebar";
-import {
-  CircleGauge,
-  LayoutPanelLeft,
-  MapPin,
-  Music,
-  ReceiptText,
-  Ticket,
-} from "lucide-react";
+import { CircleGauge, MapPin, Music, ReceiptText, Ticket } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -58,19 +51,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex w-full items-center gap-2 p-1.5">
-              <div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <LayoutPanelLeft className="size-5" />
+            <div className="flex w-full items-center gap-3 rounded-lg border border-sidebar-border/80 bg-sidebar-accent/50 p-2">
+              <div className="flex aspect-square size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                <Ticket className="size-5" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">
-                  <span className="text-orange-500 dark:text-orange-400">
-                    Mod
-                  </span>
-                  Ticket
-                </span>
+                <span className="font-semibold">ModTicket</span>
                 <span className="font-medium text-muted-foreground text-xs">
-                  Concert Ticket Booking System
+                  Concert operations
                 </span>
               </div>
             </div>

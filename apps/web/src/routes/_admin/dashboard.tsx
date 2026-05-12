@@ -1,4 +1,4 @@
-import { Button } from "@modticket/ui/components/button";
+import { Button, buttonVariants } from "@modticket/ui/components/button";
 import {
   Card,
   CardContent,
@@ -7,13 +7,16 @@ import {
 } from "@modticket/ui/components/card";
 import { DataTable } from "@modticket/ui/components/data-table";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowUpDown,
   Banknote,
+  CalendarDays,
   Crown,
+  MapPin,
   Music,
+  ShieldCheck,
   Ticket,
   Users,
 } from "lucide-react";
@@ -22,10 +25,20 @@ import { orpc } from "@/utils/orpc";
 
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
   currency: "THB",
-  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
   style: "currency",
 });
+
+const compactCurrencyFormatter = new Intl.NumberFormat("th-TH", {
+  compactDisplay: "short",
+  currency: "THB",
+  maximumFractionDigits: 1,
+  notation: "compact",
+  style: "currency",
+});
+
+const COMPACT_CURRENCY_THRESHOLD = 100_000;
 
 const percentageFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -36,6 +49,10 @@ export const Route = createFileRoute("/_admin/dashboard")({
 });
 
 function formatCurrency(value: number): string {
+  if (Math.abs(value) >= COMPACT_CURRENCY_THRESHOLD) {
+    return compactCurrencyFormatter.format(value);
+  }
+
   return currencyFormatter.format(value);
 }
 
@@ -70,32 +87,32 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function MetricCard({
-  title,
-  value,
   description,
   icon,
+  title,
+  value,
 }: {
-  title: string;
-  value: string;
   description: string;
   icon: ReactNode;
+  title: string;
+  value: string;
 }) {
   return (
-    <Card className="border-border/60 bg-card shadow-sm">
+    <Card className="rounded-lg border-border/70 bg-card shadow-sm">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-[0.18em]">
+            <p className="font-medium text-muted-foreground text-xs uppercase tracking-[0.16em]">
               {title}
             </p>
-            <p className="font-semibold text-3xl text-foreground tabular-nums tracking-tight">
+            <p className="font-semibold text-3xl text-foreground tabular-nums">
               {value}
             </p>
             <p className="text-muted-foreground text-sm leading-6">
               {description}
             </p>
           </div>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/40 text-muted-foreground">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/50 text-muted-foreground">
             {icon}
           </div>
         </div>
@@ -106,7 +123,7 @@ function MetricCard({
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
+    <div className="flex items-center justify-between gap-4 py-3">
       <span className="text-muted-foreground text-sm">{label}</span>
       <span className="font-medium text-foreground text-sm tabular-nums">
         {value}
@@ -122,6 +139,14 @@ interface EventStats {
   status: string;
   ticketsSold: number;
   totalCapacity: number;
+}
+
+function getOccupancy(event: EventStats): number {
+  if (event.totalCapacity <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, (event.ticketsSold / event.totalCapacity) * 100);
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Dashboard aggregates several related data sources.
@@ -178,8 +203,8 @@ function RouteComponent() {
     concertStats.set(concert.id, {
       id: concert.id,
       name: concert.name,
-      status: concert.status,
       revenue: 0,
+      status: concert.status,
       ticketsSold: 0,
       totalCapacity: 0,
     });
@@ -231,7 +256,7 @@ function RouteComponent() {
   );
 
   const topSellingEvents = rankedEvents.slice(0, 5);
-  const _topRevenueEvent = [...rankedEvents].sort(
+  const topRevenueEvent = [...rankedEvents].sort(
     (a, b) => b.revenue - a.revenue || b.ticketsSold - a.ticketsSold
   )[0];
 
@@ -260,34 +285,41 @@ function RouteComponent() {
     () => [
       {
         accessorKey: "name",
-        header: "Concert",
         cell: ({ row }) => {
           const event = row.original;
+          const occupancy = Math.round(getOccupancy(event));
+
           return (
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">{event.name}</p>
-              <p className="text-muted-foreground text-xs">
-                {Math.min(
-                  100,
-                  event.totalCapacity > 0
-                    ? Math.round(
-                        (event.ticketsSold / event.totalCapacity) * 100
-                      )
-                    : 0
-                )}
-                % occupancy
-              </p>
+            <div className="min-w-52 space-y-2">
+              <div>
+                <p className="font-medium text-foreground">{event.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {occupancy}% occupancy
+                </p>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-foreground"
+                  style={{ width: `${occupancy}%` }}
+                />
+              </div>
             </div>
           );
         },
+        header: "Concert",
       },
       {
         accessorKey: "status",
-        header: "Status",
         cell: ({ row }) => <StatusPill status={row.getValue("status")} />,
+        header: "Status",
       },
       {
         accessorKey: "ticketsSold",
+        cell: ({ row }) => (
+          <div className="text-right text-foreground tabular-nums">
+            {row.getValue("ticketsSold")}
+          </div>
+        ),
         header: ({ column }) => (
           <div className="text-right">
             <Button
@@ -302,23 +334,23 @@ function RouteComponent() {
             </Button>
           </div>
         ),
-        cell: ({ row }) => (
-          <div className="text-right text-foreground tabular-nums">
-            {row.getValue("ticketsSold")}
-          </div>
-        ),
       },
       {
         accessorKey: "totalCapacity",
-        header: () => <div className="text-right">Capacity</div>,
         cell: ({ row }) => (
           <div className="text-right text-foreground tabular-nums">
             {row.getValue("totalCapacity")}
           </div>
         ),
+        header: () => <div className="text-right">Capacity</div>,
       },
       {
         accessorKey: "revenue",
+        cell: ({ row }) => (
+          <div className="text-right text-foreground tabular-nums">
+            {formatCurrency(row.getValue("revenue"))}
+          </div>
+        ),
         header: ({ column }) => (
           <div className="text-right">
             <Button
@@ -333,11 +365,6 @@ function RouteComponent() {
             </Button>
           </div>
         ),
-        cell: ({ row }) => (
-          <div className="text-right text-foreground tabular-nums">
-            {formatCurrency(row.getValue("revenue"))}
-          </div>
-        ),
       },
     ],
     []
@@ -345,21 +372,18 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
-          <div className="h-24 rounded-2xl border border-border/60 bg-muted/40" />
+          <div className="h-52 rounded-lg border border-border/60 bg-card" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="h-32 rounded-2xl border border-border/60 bg-muted/40" />
-            <div className="h-32 rounded-2xl border border-border/60 bg-muted/40" />
-            <div className="h-32 rounded-2xl border border-border/60 bg-muted/40" />
-            <div className="h-32 rounded-2xl border border-border/60 bg-muted/40" />
+            <div className="h-32 rounded-lg border border-border/60 bg-card" />
+            <div className="h-32 rounded-lg border border-border/60 bg-card" />
+            <div className="h-32 rounded-lg border border-border/60 bg-card" />
+            <div className="h-32 rounded-lg border border-border/60 bg-card" />
           </div>
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
-            <div className="h-[30rem] rounded-2xl border border-border/60 bg-muted/40" />
-            <div className="space-y-6">
-              <div className="h-48 rounded-2xl border border-border/60 bg-muted/40" />
-              <div className="h-64 rounded-2xl border border-border/60 bg-muted/40" />
-            </div>
+            <div className="h-[30rem] rounded-lg border border-border/60 bg-card" />
+            <div className="h-[30rem] rounded-lg border border-border/60 bg-card" />
           </div>
         </div>
       </div>
@@ -367,8 +391,69 @@ function RouteComponent() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-muted/30 p-4 sm:p-6 lg:p-8">
       <div className="space-y-6">
+        <section className="grid gap-6 rounded-lg border border-border/70 bg-card p-6 shadow-sm xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <ShieldCheck className="size-4 text-foreground" />
+                Admin ticketing console
+              </div>
+              <p className="mt-2 max-w-2xl text-muted-foreground text-sm leading-6">
+                Monitor sales, capacity, and booking quality from one calm
+                workspace.
+              </p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                className={buttonVariants({
+                  className: "h-11 rounded-md",
+                })}
+                to="/bookings"
+              >
+                Review bookings
+                <Ticket className="size-4" />
+              </Link>
+              <Link
+                className={buttonVariants({
+                  className: "h-11 rounded-md",
+                  variant: "outline",
+                })}
+                to="/concerts"
+              >
+                Publish schedule
+                <CalendarDays className="size-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-foreground p-5 text-background">
+            <p className="text-background/60 text-sm">Live checkout preview</p>
+            <h2 className="mt-2 font-semibold text-2xl">
+              {topSeller?.name ?? "Waiting for ticket activity"}
+            </h2>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-background/15 p-3">
+                <p className="text-background/55 text-xs">Sold</p>
+                <p className="mt-2 font-semibold text-2xl tabular-nums">
+                  {topSeller?.ticketsSold.toLocaleString() ?? "0"}
+                </p>
+              </div>
+              <div className="rounded-md border border-background/15 p-3">
+                <p className="text-background/55 text-xs">Revenue</p>
+                <p className="mt-2 font-semibold text-2xl tabular-nums">
+                  {formatCurrency(topSeller?.revenue ?? 0)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-2 text-background/60 text-sm">
+              <MapPin className="size-4" />
+              Capacity and payment data are synced.
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             description="Successful payments only"
@@ -396,36 +481,34 @@ function RouteComponent() {
           />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
-          <Card className="border-border/60 bg-card shadow-sm">
-            <CardHeader className="border-border/60 border-b px-6 py-5">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.85fr)]">
+          <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+            <CardHeader className="border-border/70 border-b px-6 py-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-lg">Top selling events</CardTitle>
+                  <CardTitle className="text-xl">Concert performance</CardTitle>
                   <p className="mt-1 text-muted-foreground text-sm">
-                    Ordered by tickets sold.
+                    Ranked by tickets sold, with revenue as the tie-breaker.
                   </p>
                 </div>
-                <div className="text-muted-foreground text-sm">
+                <div className="rounded-md border border-border px-3 py-2 text-muted-foreground text-sm">
                   {topSellingEvents.length} events
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="p-6">
-                <DataTable
-                  columns={columns}
-                  data={topSellingEvents}
-                  searchKey="name"
-                />
-              </div>
+            <CardContent className="p-6">
+              <DataTable
+                columns={columns}
+                data={topSellingEvents}
+                searchKey="name"
+              />
             </CardContent>
           </Card>
 
           <div className="space-y-6">
-            <Card className="border-border/60 bg-card shadow-sm">
-              <CardHeader className="border-border/60 border-b px-6 py-5">
-                <CardTitle className="text-lg">Snapshot</CardTitle>
+            <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+              <CardHeader className="border-border/70 border-b px-6 py-5">
+                <CardTitle className="text-xl">Snapshot</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 px-6 py-4">
                 <StatRow
@@ -441,75 +524,34 @@ function RouteComponent() {
                   value={formatCurrency(averageRevenuePerTicket)}
                 />
                 <StatRow
-                  label="Total concerts"
-                  value={totalConcerts.toLocaleString()}
+                  label="Top revenue"
+                  value={
+                    topRevenueEvent
+                      ? formatCurrency(topRevenueEvent.revenue)
+                      : formatCurrency(0)
+                  }
                 />
               </CardContent>
             </Card>
 
-            <Card className="border-border/60 bg-card shadow-sm">
-              <CardHeader className="border-border/60 border-b px-6 py-5">
-                <CardTitle className="text-lg">Leading event</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6 py-4">
-                {topSeller ? (
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {topSeller.name}
-                        </p>
-                        <p className="mt-1 text-muted-foreground text-sm">
-                          {topSeller.ticketsSold} tickets sold
-                        </p>
-                      </div>
-                      <Crown className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-[0.16em]">
-                          Revenue
-                        </p>
-                        <p className="mt-2 font-semibold text-foreground text-lg tabular-nums">
-                          {formatCurrency(topSeller.revenue)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-xs uppercase tracking-[0.16em]">
-                          Occupancy
-                        </p>
-                        <p className="mt-2 font-semibold text-foreground text-lg tabular-nums">
-                          {formatPercentage(
-                            topSeller.totalCapacity > 0
-                              ? (topSeller.ticketsSold /
-                                  topSeller.totalCapacity) *
-                                  100
-                              : 0
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-foreground"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            topSeller.totalCapacity > 0
-                              ? (topSeller.ticketsSold /
-                                  topSeller.totalCapacity) *
-                                  100
-                              : 0
-                          )}%`,
-                        }}
-                      />
-                    </div>
+            <Card className="rounded-lg border-border/70 bg-card shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-muted-foreground text-sm">
+                      Leading event
+                    </p>
+                    <h2 className="mt-2 font-semibold text-xl">
+                      {topSeller?.name ?? "Sales will appear here soon"}
+                    </h2>
+                    <p className="mt-2 text-muted-foreground text-sm leading-6">
+                      {topSeller
+                        ? `${formatPercentage(getOccupancy(topSeller))} occupied across assigned venue capacity.`
+                        : "Create concerts and showtimes to start tracking demand."}
+                    </p>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    Sales will appear here once tickets start moving.
-                  </p>
-                )}
+                  <Crown className="h-5 w-5 text-muted-foreground" />
+                </div>
               </CardContent>
             </Card>
           </div>
