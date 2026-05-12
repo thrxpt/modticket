@@ -5,14 +5,14 @@ import { UniqueEnforcer } from "enforce-unique";
 import { db } from ".";
 import * as schema from "./schema";
 
-const USER_COUNT = 50;
-const ORGANIZER_COUNT = 5;
-const VENUE_COUNT = 3;
-const CONCERT_COUNT = 10;
-const BOOKING_COUNT = 100;
-const SHOWTIMES_PER_CONCERT = 2;
-const MAX_SEATS_PER_ZONE = 20;
-const MAX_SEATS_PER_BOOKING = 4;
+const USER_COUNT = 500;
+const ORGANIZER_COUNT = 30;
+const VENUE_COUNT = 15;
+const CONCERT_COUNT = 50;
+const BOOKING_COUNT = 1000;
+const SHOWTIMES_PER_CONCERT = 3;
+const MAX_SEATS_PER_ZONE = 200;
+const MAX_SEATS_PER_BOOKING = 6;
 const DEFAULT_PASSWORD = "password123";
 const ADMIN_USER = {
   name: "Admin",
