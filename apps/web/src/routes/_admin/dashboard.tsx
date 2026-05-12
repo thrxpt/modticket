@@ -1,21 +1,23 @@
+import { Button } from "@modticket/ui/components/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@modticket/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@modticket/ui/components/table";
+import { DataTable } from "@modticket/ui/components/data-table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Banknote, Crown, Music, Ticket, Users } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  Banknote,
+  Crown,
+  Music,
+  Ticket,
+  Users,
+} from "lucide-react";
+import { type ReactNode, useMemo } from "react";
 import { orpc } from "@/utils/orpc";
 
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
@@ -113,6 +115,15 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+interface EventStats {
+  id: string;
+  name: string;
+  revenue: number;
+  status: string;
+  ticketsSold: number;
+  totalCapacity: number;
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Dashboard aggregates several related data sources.
 function RouteComponent() {
   const { data: payments, isLoading: isLoadingPayments } = useQuery(
@@ -161,17 +172,7 @@ function RouteComponent() {
     venueCapacityById.set(venue.id, venue.capacity);
   }
 
-  const concertStats = new Map<
-    string,
-    {
-      id: string;
-      name: string;
-      status: string;
-      revenue: number;
-      ticketsSold: number;
-      totalCapacity: number;
-    }
-  >();
+  const concertStats = new Map<string, EventStats>();
 
   for (const concert of concerts || []) {
     concertStats.set(concert.id, {
@@ -255,6 +256,93 @@ function RouteComponent() {
     totalTickets > 0 ? totalRevenue / totalTickets : 0;
   const topSeller = topSellingEvents[0];
 
+  const columns = useMemo<ColumnDef<EventStats>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Concert",
+        cell: ({ row }) => {
+          const event = row.original;
+          return (
+            <div className="space-y-1">
+              <p className="font-medium text-foreground">{event.name}</p>
+              <p className="text-muted-foreground text-xs">
+                {Math.min(
+                  100,
+                  event.totalCapacity > 0
+                    ? Math.round(
+                        (event.ticketsSold / event.totalCapacity) * 100
+                      )
+                    : 0
+                )}
+                % occupancy
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => <StatusPill status={row.getValue("status")} />,
+      },
+      {
+        accessorKey: "ticketsSold",
+        header: ({ column }) => (
+          <div className="text-right">
+            <Button
+              className="-mr-4 h-8"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+              variant="ghost"
+            >
+              Sold
+              <ArrowUpDown className="ml-2 size-4" />
+            </Button>
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="text-right text-foreground tabular-nums">
+            {row.getValue("ticketsSold")}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "totalCapacity",
+        header: () => <div className="text-right">Capacity</div>,
+        cell: ({ row }) => (
+          <div className="text-right text-foreground tabular-nums">
+            {row.getValue("totalCapacity")}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "revenue",
+        header: ({ column }) => (
+          <div className="text-right">
+            <Button
+              className="-mr-4 h-8"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+              variant="ghost"
+            >
+              Revenue
+              <ArrowUpDown className="ml-2 size-4" />
+            </Button>
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="text-right text-foreground tabular-nums">
+            {formatCurrency(row.getValue("revenue"))}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -324,69 +412,13 @@ function RouteComponent() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/60 hover:bg-transparent">
-                    <TableHead className="pl-6">Concert</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Sold</TableHead>
-                    <TableHead className="text-right">Capacity</TableHead>
-                    <TableHead className="pr-6 text-right">Revenue</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topSellingEvents.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        className="py-12 text-center text-muted-foreground"
-                        colSpan={5}
-                      >
-                        No sales data available yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    topSellingEvents.map((event) => (
-                      <TableRow
-                        className="border-border/60 hover:bg-muted/30"
-                        key={event.id}
-                      >
-                        <TableCell className="pl-6">
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">
-                              {event.name}
-                            </p>
-                            <p className="text-muted-foreground text-xs">
-                              {Math.min(
-                                100,
-                                event.totalCapacity > 0
-                                  ? Math.round(
-                                      (event.ticketsSold /
-                                        event.totalCapacity) *
-                                        100
-                                    )
-                                  : 0
-                              )}
-                              % occupancy
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusPill status={event.status} />
-                        </TableCell>
-                        <TableCell className="text-right text-foreground tabular-nums">
-                          {event.ticketsSold}
-                        </TableCell>
-                        <TableCell className="text-right text-foreground tabular-nums">
-                          {event.totalCapacity}
-                        </TableCell>
-                        <TableCell className="pr-6 text-right text-foreground tabular-nums">
-                          {formatCurrency(event.revenue)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              <div className="p-6">
+                <DataTable
+                  columns={columns}
+                  data={topSellingEvents}
+                  searchKey="name"
+                />
+              </div>
             </CardContent>
           </Card>
 

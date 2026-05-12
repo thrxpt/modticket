@@ -1,3 +1,4 @@
+import { Button } from "@modticket/ui/components/button";
 import {
   Card,
   CardContent,
@@ -5,18 +6,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@modticket/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@modticket/ui/components/table";
+import { DataTable } from "@modticket/ui/components/data-table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Banknote, CreditCard, DollarSign, TrendingUp } from "lucide-react";
+import {
+  ArrowUpDown,
+  Banknote,
+  CreditCard,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
+import { useMemo } from "react";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_admin/finance/sales-report")({
@@ -41,6 +43,91 @@ function SalesReportComponent() {
       },
       {} as Record<string, number>
     ) || {};
+
+  type Payment = NonNullable<typeof payments>[number];
+
+  const columns = useMemo<ColumnDef<Payment>[]>(
+    () => [
+      {
+        accessorKey: "paymentDate",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Date
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("paymentDate") as string | number | Date;
+          return (
+            <div className="text-muted-foreground text-sm">
+              {date ? format(new Date(date), "MMM d, HH:mm") : "N/A"}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "paymentMethod",
+        header: "Method",
+        cell: ({ row }) => (
+          <div className="capitalize">{row.getValue("paymentMethod")}</div>
+        ),
+      },
+      {
+        accessorKey: "paymentStatus",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.getValue("paymentStatus") as string;
+          return (
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold text-xs capitalize ${
+                status === "paid"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+              }`}
+            >
+              {status}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "transactionRef",
+        header: "Ref",
+        cell: ({ row }) => (
+          <div className="font-mono text-xs">
+            {row.getValue("transactionRef")}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "amount",
+        header: ({ column }) => (
+          <div className="text-right">
+            <Button
+              className="-mr-4 h-8"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+              variant="ghost"
+            >
+              Amount
+              <ArrowUpDown className="ml-2 size-4" />
+            </Button>
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="text-right font-medium">
+            ${row.getValue("amount")}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
@@ -112,55 +199,11 @@ function SalesReportComponent() {
               Loading transactions...
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ref</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments?.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {payment.paymentDate
-                        ? format(new Date(payment.paymentDate), "MMM d, HH:mm")
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="capitalize">
-                      {payment.paymentMethod}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold text-xs capitalize ${
-                          payment.paymentStatus === "paid"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                        }`}
-                      >
-                        {payment.paymentStatus}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {payment.transactionRef}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ${payment.amount}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {payments?.length === 0 && (
-                  <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={5}>
-                      No transactions found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={columns}
+              data={payments ?? []}
+              searchKey="transactionRef"
+            />
           )}
         </CardContent>
       </Card>

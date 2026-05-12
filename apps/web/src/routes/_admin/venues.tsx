@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@modticket/ui/components/card";
+import { DataTable } from "@modticket/ui/components/data-table";
 import { Field, FieldLabel } from "@modticket/ui/components/field";
 import { Input } from "@modticket/ui/components/input";
 import {
@@ -26,18 +27,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@modticket/ui/components/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@modticket/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit, Layers, MapPin, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, Edit, Layers, MapPin, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/utils/orpc";
 
@@ -188,71 +182,96 @@ function ManageZones({ venueId }: { venueId: string }) {
     }
   };
 
-  const handleDeleteZone = async (id: string) => {
-    try {
-      await deleteZoneMutation.mutateAsync({ id });
-      toast.success("Zone deleted successfully");
-      queryClient.invalidateQueries({
-        queryKey: orpc.venue.listZones.queryOptions({ input: { venueId } })
-          .queryKey,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete zone");
-    }
-  };
+  const handleDeleteZone = useCallback(
+    async (id: string) => {
+      try {
+        await deleteZoneMutation.mutateAsync({ id });
+        toast.success("Zone deleted successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.venue.listZones.queryOptions({ input: { venueId } })
+            .queryKey,
+        });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to delete zone"
+        );
+      }
+    },
+    [deleteZoneMutation, queryClient, venueId]
+  );
 
-  let content: React.ReactNode;
+  type Zone = NonNullable<typeof zones>[number];
 
-  if (isLoading) {
-    content = (
-      <TableRow>
-        <TableCell className="text-center" colSpan={4}>
-          Loading zones...
-        </TableCell>
-      </TableRow>
-    );
-  } else if (zones?.length === 0) {
-    content = (
-      <TableRow>
-        <TableCell className="text-center" colSpan={4}>
-          No zones found.
-        </TableCell>
-      </TableRow>
-    );
-  } else {
-    content = zones?.map((zone) => (
-      <TableRow key={zone.id}>
-        <TableCell>{zone.name}</TableCell>
-        <TableCell>{zone.capacity}</TableCell>
-        <TableCell>${zone.price}</TableCell>
-        <TableCell>
-          <AlertDialog>
-            <AlertDialogTrigger render={<Button size="icon" variant="ghost" />}>
-              <Trash2 className="size-4 text-destructive" />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Zone</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete the zone "{zone.name}"? This
-                  action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={() => handleDeleteZone(zone.id)}
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </TableCell>
-      </TableRow>
-    ));
-  }
+  const columns = useMemo<ColumnDef<Zone>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Name
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+      },
+      {
+        accessorKey: "capacity",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Capacity
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+      },
+      {
+        accessorKey: "price",
+        header: "Price",
+        cell: ({ row }) => `$${row.getValue("price")}`,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const zone = row.original;
+          return (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button size="icon" variant="ghost" />}
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Zone</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete the zone "{zone.name}"? This
+                    action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => handleDeleteZone(zone.id)}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          );
+        },
+      },
+    ],
+    [handleDeleteZone]
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4">
@@ -288,19 +307,13 @@ function ManageZones({ venueId }: { venueId: string }) {
         </CardContent>
       </Card>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>{content}</TableBody>
-        </Table>
-      </div>
+      {isLoading ? (
+        <div className="flex h-24 items-center justify-center rounded-md border text-sm">
+          Loading zones...
+        </div>
+      ) : (
+        <DataTable columns={columns} data={zones ?? []} searchKey="name" />
+      )}
     </div>
   );
 }
@@ -321,98 +334,122 @@ function VenuesComponent() {
     name: string;
   } | null>(null);
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteMutation.mutateAsync({ id });
-      toast.success("Venue deleted successfully");
-      queryClient.invalidateQueries({
-        queryKey: orpc.venue.list.queryOptions().queryKey,
-      });
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete venue"
-      );
-    }
-  };
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await deleteMutation.mutateAsync({ id });
+        toast.success("Venue deleted successfully");
+        queryClient.invalidateQueries({
+          queryKey: orpc.venue.list.queryOptions().queryKey,
+        });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to delete venue"
+        );
+      }
+    },
+    [deleteMutation, queryClient]
+  );
 
-  let tableContent: React.ReactNode;
+  type Venue = NonNullable<typeof venues>[number];
 
-  if (isLoading) {
-    tableContent = (
-      <TableRow>
-        <TableCell className="text-center" colSpan={4}>
-          Loading venues...
-        </TableCell>
-      </TableRow>
-    );
-  } else if (venues?.length === 0) {
-    tableContent = (
-      <TableRow>
-        <TableCell className="text-center" colSpan={4}>
-          No venues found.
-        </TableCell>
-      </TableRow>
-    );
-  } else {
-    tableContent = venues?.map((venue) => (
-      <TableRow key={venue.id}>
-        <TableCell className="font-medium">{venue.name}</TableCell>
-        <TableCell>
+  const columns = useMemo<ColumnDef<Venue>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Name
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("name")}</div>
+        ),
+      },
+      {
+        accessorKey: "location",
+        header: "Location",
+        cell: ({ row }) => (
           <div className="flex items-center gap-1 text-muted-foreground">
             <MapPin className="size-3" />
-            {venue.location}
+            {row.getValue("location")}
           </div>
-        </TableCell>
-        <TableCell>{venue.capacity}</TableCell>
-        <TableCell>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() =>
-                setManagingVenue({ id: venue.id, name: venue.name })
-              }
-              size="icon"
-              variant="ghost"
-            >
-              <Layers className="size-4" />
-            </Button>
-            <Button
-              onClick={() => setEditingVenue(venue)}
-              size="icon"
-              variant="ghost"
-            >
-              <Edit className="size-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={<Button size="icon" variant="ghost" />}
+        ),
+      },
+      {
+        accessorKey: "capacity",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Capacity
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const venue = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() =>
+                  setManagingVenue({ id: venue.id, name: venue.name })
+                }
+                size="icon"
+                variant="ghost"
               >
-                <Trash2 className="size-4 text-destructive" />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Venue</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{venue.name}"? This action
-                    cannot be undone and may fail if there are concerts or zones
-                    attached to it.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => handleDelete(venue.id)}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </TableCell>
-      </TableRow>
-    ));
-  }
+                <Layers className="size-4" />
+              </Button>
+              <Button
+                onClick={() => setEditingVenue(venue)}
+                size="icon"
+                variant="ghost"
+              >
+                <Edit className="size-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={<Button size="icon" variant="ghost" />}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Venue</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{venue.name}"? This
+                      action cannot be undone and may fail if there are concerts
+                      or zones attached to it.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => handleDelete(venue.id)}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          );
+        },
+      },
+    ],
+    [handleDelete]
+  );
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -434,19 +471,13 @@ function VenuesComponent() {
         </Sheet>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead className="w-[150px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>{tableContent}</TableBody>
-        </Table>
-      </div>
+      {isLoading ? (
+        <div className="flex h-24 items-center justify-center rounded-md border">
+          Loading venues...
+        </div>
+      ) : (
+        <DataTable columns={columns} data={venues ?? []} searchKey="name" />
+      )}
 
       <Sheet
         onOpenChange={(open) => !open && setEditingVenue(null)}

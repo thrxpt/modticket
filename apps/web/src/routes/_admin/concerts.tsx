@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@modticket/ui/components/card";
+import { DataTable } from "@modticket/ui/components/data-table";
 import { Field, FieldLabel } from "@modticket/ui/components/field";
 import { Input } from "@modticket/ui/components/input";
 import {
@@ -34,18 +35,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@modticket/ui/components/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@modticket/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit, Plus, Settings2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, Edit, Plus, Settings2, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/utils/orpc";
 
@@ -530,8 +524,59 @@ function ConcertsComponent() {
   const { data: venues } = useQuery(orpc.venue.list.queryOptions());
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
 
-  const getVenueName = (venueId: string) =>
-    venues?.find((v) => v.id === venueId)?.name || venueId;
+  const getVenueName = useCallback(
+    (venueId: string) => venues?.find((v) => v.id === venueId)?.name || venueId,
+    [venues]
+  );
+
+  const columns = useMemo<ColumnDef<Concert>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <Button
+            className="-ml-4 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="ghost"
+          >
+            Name
+            <ArrowUpDown className="ml-2 size-4" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("name")}</div>
+        ),
+      },
+      {
+        accessorKey: "venueId",
+        header: "Venue",
+        cell: ({ row }) => (
+          <div className="text-muted-foreground">
+            {getVenueName(row.getValue("venueId"))}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold text-xs capitalize">
+            {row.getValue("status")}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => (
+          <div className="text-right">
+            <ConcertRowActions concert={row.original as Concert} />
+          </div>
+        ),
+      },
+    ],
+    [getVenueName]
+  );
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -568,57 +613,17 @@ function ConcertsComponent() {
           <CardTitle className="text-lg">All Concerts</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-6">Name</TableHead>
-                <TableHead>Venue</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-6 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && (
-                <TableRow>
-                  <TableCell
-                    className="py-8 text-center text-muted-foreground"
-                    colSpan={4}
-                  >
-                    Loading concerts...
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading && concerts?.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    className="py-8 text-center text-muted-foreground"
-                    colSpan={4}
-                  >
-                    No concerts found. Create one to get started.
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading &&
-                concerts?.map((concert) => (
-                  <TableRow key={concert.id}>
-                    <TableCell className="pl-6 font-medium">
-                      {concert.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {getVenueName(concert.venueId)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold text-xs capitalize">
-                        {concert.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="pr-6 text-right">
-                      <ConcertRowActions concert={concert as Concert} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              Loading concerts...
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={(concerts as Concert[]) ?? []}
+              searchKey="name"
+            />
+          )}
         </CardContent>
       </Card>
     </div>
