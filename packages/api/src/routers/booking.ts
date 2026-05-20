@@ -59,7 +59,8 @@ export const bookingRouter = {
               inArray(showtimeSeat.seatId, input.seatIds),
               eq(showtimeSeat.isAvailable, true)
             )
-          );
+          )
+          .for("update");
 
         if (availableSeats.length !== input.seatIds.length) {
           throw new ORPCError("CONFLICT", {

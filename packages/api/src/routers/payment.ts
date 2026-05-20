@@ -24,55 +24,59 @@ export const paymentRouter = {
     .handler(async ({ context, input }) => {
       const { session } = context;
 
-      // Verify booking exists and belongs to the user
-      const [b] = await db
-        .select()
-        .from(booking)
-        .where(eq(booking.id, input.bookingId));
+      return await db.transaction(async (tx) => {
+        // Verify booking exists and belongs to the user, lock the booking row
+        const [b] = await tx
+          .select()
+          .from(booking)
+          .where(eq(booking.id, input.bookingId))
+          .for("update");
 
-      if (!b) {
-        throw new ORPCError("NOT_FOUND", { message: "Booking not found" });
-      }
+        if (!b) {
+          throw new ORPCError("NOT_FOUND", { message: "Booking not found" });
+        }
 
-      const isAdmin = session.user.role === "admin";
-      if (!isAdmin && b.userId !== session.user.id) {
-        throw new ORPCError("FORBIDDEN");
-      }
+        const isAdmin = session.user.role === "admin";
+        if (!isAdmin && b.userId !== session.user.id) {
+          throw new ORPCError("FORBIDDEN");
+        }
 
-      if (b.status !== "confirmed") {
-        throw new ORPCError("CONFLICT", {
-          message: "Only confirmed bookings can be paid",
-        });
-      }
+        if (b.status !== "confirmed") {
+          throw new ORPCError("CONFLICT", {
+            message: "Only confirmed bookings can be paid",
+          });
+        }
 
-      // Prevent duplicate payment for the same booking
-      const [existingPayment] = await db
-        .select()
-        .from(payment)
-        .where(eq(payment.bookingId, input.bookingId));
+        // Prevent duplicate payment for the same booking, lock existing payments
+        const [existingPayment] = await tx
+          .select()
+          .from(payment)
+          .where(eq(payment.bookingId, input.bookingId))
+          .for("update");
 
-      if (existingPayment) {
-        throw new ORPCError("CONFLICT", {
-          message: "A payment already exists for this booking",
-        });
-      }
+        if (existingPayment) {
+          throw new ORPCError("CONFLICT", {
+            message: "A payment already exists for this booking",
+          });
+        }
 
-      const id = crypto.randomUUID();
-      const [newPayment] = await db
-        .insert(payment)
-        .values({
-          id,
-          bookingId: input.bookingId,
-          amount: input.amount,
-          paymentMethod: input.paymentMethod,
-          paymentStatus: "paid",
-          bankName: input.bankName,
-          transactionRef: input.transactionRef,
-          paymentDate: new Date(),
-        })
-        .returning();
+        const id = crypto.randomUUID();
+        const [newPayment] = await tx
+          .insert(payment)
+          .values({
+            id,
+            bookingId: input.bookingId,
+            amount: input.amount,
+            paymentMethod: input.paymentMethod,
+            paymentStatus: "paid",
+            bankName: input.bankName,
+            transactionRef: input.transactionRef,
+            paymentDate: new Date(),
+          })
+          .returning();
 
-      return newPayment;
+        return newPayment;
+      });
     }),
 
   /** Get a single payment by ID. Users can only see their own booking's payment. */

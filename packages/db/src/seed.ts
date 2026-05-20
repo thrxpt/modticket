@@ -218,6 +218,7 @@ async function seed() {
         return {
           id: crypto.randomUUID(),
           name: `${faker.music.songName()} Live Tour`,
+          artist_name: faker.person.fullName(),
           description: faker.lorem.paragraphs(2),
           posterUrl: faker.image.url({
             width: 400,

@@ -77,6 +77,7 @@ export const concert = pgTable("concert", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
+  artist_name: text("artist_name").notNull(),
   posterUrl: text("poster_url"),
   status: concertStatusEnum("status").default("draft").notNull(),
   organizedBy: text("organized_by")
